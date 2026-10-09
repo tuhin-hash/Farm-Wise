@@ -378,11 +378,31 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
       }
     } catch (err: any) {
       console.warn('Voice query processing fallback:', err);
-      // High-Fidelity Local Fallback
-      const fallbackText =
-        lang === 'kn-IN'
-          ? 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ದಿನ 11 ರಂದು ಬಿಸಿಲಿನ ಶಾಖದಿಂದಾಗಿ ಹಾಲು 35 ಲೀಟರ್ ಇಳಿಕೆಯಾಗಿದೆ. ಮೊದಲು ಕುಡಿಯುವ ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಕಲ್ಪಿಸಿ ಮತ್ತು ಫ್ಯಾನ್ ಗಾಳಿ ಹೆಚ್ಚಿಸಿ. ಹಸು KA-MAN-104 ಗೆ ಜ್ವರವಿದ್ದು ಪಶುವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.'
-          : 'Herd Alert: Milk production declined by 35 L on Day 11 following summer heat stress (THI 86.8). First, shade drinking troughs and increase barn ventilation. Cow KA-MAN-104 has a 39.9°C fever and requires urgent vet attention.';
+      const qLower = textToSend.toLowerCase();
+      const isGreeting = qLower.includes('hello') || qLower.includes('hi') || qLower.includes('hey') || qLower.includes('namaskara') || qLower.includes('ನಮಸ್ಕಾರ');
+      const isCowReport = qLower.includes('report') || qLower.includes('single cow') || qLower.includes('dossier') || qLower.includes('ವರದಿ');
+
+      let fallbackText = '';
+      let targetTab = 'overview';
+
+      if (isGreeting) {
+        fallbackText =
+          lang === 'kn-IN'
+            ? 'ನಮಸ್ಕಾರ! ಫಾರ್ಮ್‌ವೈಸ್‌ಗೆ ಸುಸ್ವಾಗತ. ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡಲು ಸಂತೋಷವಾಗಿದೆ! ಇಂದು ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ? ಹಾಲಿನ ಉತ್ಪಾದನೆ, ಹಸುಗಳ ಆರೋಗ್ಯ ಅಥವಾ ಕಡಿಮೆ ವೆಚ್ಚದ ಮೇವಿನ ಬಗ್ಗೆ ನೀವು ಕೇಳಬಹುದು.'
+            : 'Hello! Great to hear from you. Welcome to FarmWise at NammaHerd Dairy! How can I help you today? You can ask me about today\'s 35-litre milk drop, check on sick cows like KA-MAN-104, compare feed savings in the Decision Arena, or open any cow\'s complete health dossier.';
+      } else if (isCowReport) {
+        fallbackText =
+          lang === 'kn-IN'
+            ? 'ಏಕ ಹಸುವಿನ ಸಂಪೂರ್ಣ ಆರೋಗ್ಯ ಮತ್ತು ಉತ್ಪಾದನಾ ವರದಿ ವಿಭಾಗವನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. ಹಸು KA-MAN-104 ಮತ್ತು ಇತರ ಎಲ್ಲಾ ಹಸುಗಳ ಸಂಪೂರ್ಣ ನಾಡಿಮಿಡಿತ ಮತ್ತು ಹಾಲಿನ ವಿವರಗಳನ್ನು ನೀವು ಪರಿಶೀಲಿಸಬಹುದು.'
+            : 'Opening the Single Cow Clinical Report dossier. You can inspect comprehensive vital signs, lactation history, and veterinary triage guidance for any animal in your herd.';
+        targetTab = 'cow-reports';
+      } else {
+        fallbackText =
+          lang === 'kn-IN'
+            ? 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ದಿನ 11 ರಂದು ಬಿಸಿಲಿನ ಶಾಖದಿಂದಾಗಿ ಹಾಲು 35 ಲೀಟರ್ ಇಳಿಕೆಯಾಗಿದೆ. ಮೊದಲು ಕುಡಿಯುವ ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಕಲ್ಪಿಸಿ ಮತ್ತು ಫ್ಯಾನ್ ಗಾಳಿ ಹೆಚ್ಚಿಸಿ. ಹಸು KA-MAN-104 ಗೆ ಜ್ವರವಿದ್ದು ಪಶುವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.'
+            : 'Herd Alert: Milk production declined by 35 L on Day 11 following summer heat stress (THI 86.8). First, shade drinking troughs and increase barn ventilation. Cow KA-MAN-104 has a 39.9°C fever and requires urgent vet attention.';
+        targetTab = 'arena';
+      }
 
       const fallbackMsg: VoiceMessage = {
         id: `bot-${Date.now()}`,
@@ -390,7 +410,7 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         text: fallbackText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         agents: ['Farm Data Agent', 'Risk Assessment Agent', 'Decision Agent'],
-        actionTab: 'arena'
+        actionTab: targetTab
       };
 
       setMessages((prev) => [...prev, fallbackMsg]);
@@ -406,16 +426,18 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const quickPrompts =
     lang === 'kn-IN'
       ? [
+          { label: 'ನಮಸ್ಕಾರ / Hello', query: 'ನಮಸ್ಕಾರ! ಫಾರ್ಮ್‌ವೈಸ್ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ?' },
+          { label: 'ಏಕ ಹಸುವಿನ ವರದಿ', query: 'ಹಸು KA-MAN-104 ಸಂಪೂರ್ಣ ವರದಿ ತೋರಿಸಿ' },
           { label: 'ಹಾಲು ಇಳಿಕೆ ಏಕೆ?', query: 'ನನ್ನ ಹಸುಗಳು ಕಡಿಮೆ ಹಾಲು ಏಕೆ ನೀಡುತ್ತಿವೆ?' },
-          { label: 'KA-MAN-104 ಹಸು ತಪಾಸಣೆ', query: 'ಹಸು KA-MAN-104 ಅನ್ನು ಪಶುವೈದ್ಯರಿಗೆ ತೋರಿಸಬೇಕೇ?' },
-          { label: 'ಫೀಡ್ ಬೆಲೆ ಏರಿಕೆ ಪರಿಹಾರ', query: 'ಮೇವು ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆ, ಕಡಿಮೆ ವೆಚ್ಚದ ತಂತ್ರ ಯಾವುದು?' },
+          { label: 'KA-MAN-104 ತಪಾಸಣೆ', query: 'ಹಸು KA-MAN-104 ಅನ್ನು ಪಶುವೈದ್ಯರಿಗೆ ತೋರಿಸಬೇಕೇ?' },
           { label: 'ನಿರ್ಧಾರ ಅಖಾಡ ತೆರೆಯಿರಿ', query: 'ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ ತಂತ್ರಗಳನ್ನು ಹೋಲಿಸಿ' }
         ]
       : [
+          { label: 'Hello FarmWise', query: 'Hello! How can FarmWise help my dairy farm today?' },
+          { label: 'Single Cow Report', query: 'Show me the clinical report dossier for cow KA-MAN-104' },
           { label: 'Why did milk drop 35 L?', query: 'Why did my herd milk production drop by 35 litres on Day 11?' },
           { label: 'Check Cow KA-MAN-104', query: 'Why is cow KA-MAN-104 flagged for urgent veterinary triage?' },
-          { label: 'Feed Price & Margins', query: 'Feed prices rose by 16%. What alternative feed saves money?' },
-          { label: 'Open Decision Arena', query: 'Compare feed strategies and cost trade-offs in Decision Arena' }
+          { label: 'Compare Feed Strategies', query: 'Compare feed strategies and cost trade-offs in Decision Arena' }
         ];
 
   return (
@@ -567,9 +589,16 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
                         onNavigateTab(m.actionTab!);
                         onClose();
                       }}
-                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-2xs"
+                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
                     >
-                      <span>Explore in {m.actionTab === 'arena' ? 'Decision Arena' : 'Overview'}</span>
+                      <span>
+                        Explore in{' '}
+                        {m.actionTab === 'cow-reports'
+                          ? 'Cow Health Dossier'
+                          : m.actionTab === 'arena'
+                          ? 'Decision Arena'
+                          : 'Overview'}
+                      </span>
                       <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>

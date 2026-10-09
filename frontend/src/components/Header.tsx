@@ -43,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({
         return { title: 'Welcome & 3D Interactive Tour', desc: 'Decision intelligence platform overview' };
       case 'overview':
         return { title: 'Farm Overview & Operations', desc: 'Real-time telemetry, milk yield, and herd status' };
+      case 'cow-reports':
+        return { title: 'Individual Cow Health Dossier', desc: 'Merck physiological resting vitals, 14-day production curves, and clinical triage' };
       case 'arena':
         return { title: 'Decision Arena', desc: 'Multi-agent comparative strategy evaluation' };
       case 'simulator':

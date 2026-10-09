@@ -62,8 +62,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     provider: string;
     to: string;
     timestamp: string;
+    requires_carrier_setup?: boolean;
+    notice?: string;
+    setup_instructions?: string;
   } | null>(null);
   const [smsError, setSmsError] = useState<string | null>(null);
+
+  // Twilio Carrier Gateway Credentials
+  const [showTwilioConfig, setShowTwilioConfig] = useState(false);
+  const [twilioAccountSid, setTwilioAccountSid] = useState('');
+  const [twilioAuthToken, setTwilioAuthToken] = useState('3GDVLLVF9SGYGA2H447GJNNR');
+  const [twilioFromNumber, setTwilioFromNumber] = useState('');
 
   // SMS Logs state
   const [showLogs, setShowLogs] = useState(false);
@@ -220,7 +229,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         phone_number: phoneInput,
         message: customMessage,
         language: lang,
-        notification_id: notifId
+        notification_id: notifId,
+        twilio_account_sid: twilioAccountSid.trim() || undefined,
+        twilio_auth_token: twilioAuthToken.trim() || undefined,
+        twilio_from_number: twilioFromNumber.trim() || undefined
       });
       setSmsResult(res);
     } catch (err: any) {
@@ -587,6 +599,73 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               </div>
             </div>
 
+            {/* Twilio Carrier Gateway Configuration (Optional Real Cellular Delivery) */}
+            <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200 space-y-2.5">
+              <div
+                onClick={() => setShowTwilioConfig(!showTwilioConfig)}
+                className="flex items-center justify-between cursor-pointer select-none"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                  <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Twilio Cellular SMS Gateway</span>
+                </div>
+                <span className="text-[10px] font-bold text-stone-500 hover:text-stone-800 underline">
+                  {showTwilioConfig ? 'Hide Settings' : 'Configure Cellular Carrier (Optional)'}
+                </span>
+              </div>
+
+              {showTwilioConfig && (
+                <div className="pt-2 border-t border-stone-200 space-y-2.5 text-xs animate-in fade-in">
+                  <div className="p-2.5 bg-blue-50/80 rounded-xl border border-blue-200 text-[11px] text-blue-900 leading-relaxed">
+                    <strong>Physical Cellular SMS Delivery:</strong>
+                    <br />
+                    Twilio requires three elements to transmit cellular SMS to mobile towers:
+                    <ol className="list-decimal pl-4 mt-1 space-y-0.5 text-blue-800">
+                      <li><strong>Account SID</strong> (starts with <code className="font-bold">AC...</code> from Twilio Console).</li>
+                      <li><strong>Auth Token</strong> (API secret key).</li>
+                      <li><strong>Twilio Phone Number</strong> (purchased active Twilio sender number).</li>
+                    </ol>
+                    <p className="mt-1 text-[10px] text-blue-700">
+                      ⚠️ <em>Note for Twilio Trial Accounts:</em> Your recipient mobile number must also be verified in your Twilio Console under <em>Verified Caller IDs</em>.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-stone-700">Twilio Account SID</label>
+                    <input
+                      type="text"
+                      value={twilioAccountSid}
+                      onChange={(e) => setTwilioAccountSid(e.target.value)}
+                      placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                      className="w-full px-3 py-1.5 rounded-lg text-xs font-mono border border-stone-300 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-stone-700">Twilio Auth Token / API Secret</label>
+                    <input
+                      type="text"
+                      value={twilioAuthToken}
+                      onChange={(e) => setTwilioAuthToken(e.target.value)}
+                      placeholder="Enter Twilio Auth Token"
+                      className="w-full px-3 py-1.5 rounded-lg text-xs font-mono border border-stone-300 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-stone-700">Twilio From Number</label>
+                    <input
+                      type="text"
+                      value={twilioFromNumber}
+                      onChange={(e) => setTwilioFromNumber(e.target.value)}
+                      placeholder="+1234567890"
+                      className="w-full px-3 py-1.5 rounded-lg text-xs font-mono border border-stone-300 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 bg-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Test SMS Dispatcher */}
             <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -606,7 +685,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               <button
                 onClick={() => handleSendTestSMS()}
                 disabled={isSendingSMS || !isPhoneValid}
-                className="w-full py-2 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 disabled:text-stone-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-xs"
+                className="w-full py-2 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 disabled:text-stone-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 {isSendingSMS ? (
                   <>
@@ -623,17 +702,38 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
               {/* SMS Dispatch Result Feedback */}
               {smsResult && (
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1 animate-in fade-in">
-                  <div className="flex items-center justify-between font-bold text-emerald-800">
-                    <span>✓ SMS Successfully {smsResult.status}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-200/60 font-mono">
+                <div
+                  className={`p-3 rounded-xl border text-xs space-y-1.5 animate-in fade-in ${
+                    smsResult.requires_carrier_setup
+                      ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold">
+                    <span>
+                      {smsResult.requires_carrier_setup ? '⚠️ Simulated Dispatch (Sandbox)' : '✓ SMS Dispatched'}
+                    </span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                        smsResult.requires_carrier_setup
+                          ? 'bg-amber-200/80 text-amber-900'
+                          : 'bg-emerald-200/60 text-emerald-800'
+                      }`}
+                    >
                       {smsResult.provider}
                     </span>
                   </div>
-                  <p className="text-[11px] text-emerald-700 font-mono truncate">
+
+                  {smsResult.notice && (
+                    <p className="text-[11px] text-amber-800 bg-amber-100/60 p-2 rounded-lg border border-amber-200 leading-relaxed">
+                      {smsResult.notice}
+                    </p>
+                  )}
+
+                  <p className="text-[11px] font-mono truncate">
                     &quot;{smsResult.message_preview}&quot;
                   </p>
-                  <p className="text-[10px] text-emerald-600">
+                  <p className="text-[10px] text-stone-500">
                     Recipient: {smsResult.to} • {new Date(smsResult.timestamp).toLocaleTimeString()}
                   </p>
                 </div>

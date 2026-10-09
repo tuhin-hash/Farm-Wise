@@ -166,8 +166,26 @@ export const api = {
       }
     ),
 
-  sendTestSMS: (payload: { phone_number: string; message?: string; language?: string; notification_id?: string }) =>
-    fetchJson<{ status: string; message_id?: string; provider: string; to: string; message_preview: string; timestamp: string }>(
+  sendTestSMS: (payload: {
+    phone_number: string;
+    message?: string;
+    language?: string;
+    notification_id?: string;
+    twilio_account_sid?: string;
+    twilio_auth_token?: string;
+    twilio_from_number?: string;
+  }) =>
+    fetchJson<{
+      status: string;
+      message_id?: string;
+      provider: string;
+      to: string;
+      message_preview: string;
+      timestamp: string;
+      requires_carrier_setup?: boolean;
+      setup_instructions?: string;
+      notice?: string;
+    }>(
       '/api/notifications/sms/send-test',
       {
         method: 'POST',
@@ -178,5 +196,16 @@ export const api = {
   getSMSLogs: (limit: number = 20) =>
     fetchJson<{ logs: import('../types').SMSLogItem[] }>(
       `/api/notifications/sms/logs?limit=${limit}`
+    ),
+
+  // --- Single Cow Health & Production Dossier ---
+  getCows: (farmId: string = 'demo-farm-01') =>
+    fetchJson<{ cows: import('../types').CowSummary[] }>(
+      `/api/cows?farm_id=${encodeURIComponent(farmId)}`
+    ),
+
+  getCowDossier: (animalTag: string, farmId: string = 'demo-farm-01') =>
+    fetchJson<import('../types').CowDossier>(
+      `/api/cows/${encodeURIComponent(animalTag)}?farm_id=${encodeURIComponent(farmId)}`
     )
 };

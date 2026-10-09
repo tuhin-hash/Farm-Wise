@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   X,
   Mic,
-  Bell
+  Bell,
+  Stethoscope
 } from 'lucide-react';
 import type { HealthResponse } from '../types';
 
@@ -37,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'landing', label: 'Welcome & 3D Tour', icon: Home, badge: 'Home' },
     { id: 'overview', label: 'Farm Overview', icon: Compass },
+    { id: 'cow-reports', label: 'Cow Health Dossier', icon: Stethoscope, badge: 'Clinical' },
     { id: 'arena', label: 'Decision Arena', icon: Sparkles, badge: 'Core AI' },
     { id: 'simulator', label: 'What-If Simulator', icon: Sliders },
     { id: 'trends', label: 'Herd Trends', icon: Activity },

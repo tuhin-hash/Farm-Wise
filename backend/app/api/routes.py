@@ -10,6 +10,7 @@ from app.services.llm_service import llm_service
 from app.services.decision_service import decision_service
 from app.services.voice_service import voice_service
 from app.services.sms_service import sms_service
+from app.services.cow_service import cow_service
 from app.graph.workflow import execute_agent_workflow
 from app.tools.calculators import (
     calculate_feed_blend,
@@ -116,6 +117,19 @@ def get_animal_veterinary_assessment(animal_tag: str, farm_id: str = "demo-farm-
         if anim.get("animal_tag", "").upper() == animal_tag.upper():
             return evaluate_animal_vitals(anim, environmental_thi=thi).model_dump()
     raise HTTPException(status_code=404, detail=f"Animal '{animal_tag}' not found in attention list.")
+
+@router.get("/cows")
+def get_all_cows_endpoint(farm_id: str = "demo-farm-01"):
+    """Returns catalog and summaries for all cows in the herd with real-time vitals and status."""
+    return {"cows": cow_service.get_all_cows(farm_id)}
+
+@router.get("/cows/{animal_tag}")
+def get_cow_dossier_endpoint(animal_tag: str, farm_id: str = "demo-farm-01"):
+    """Returns complete clinical, physiological, production, and nutritional dossier for an individual cow."""
+    dossier = cow_service.get_cow_dossier(animal_tag, farm_id)
+    if not dossier:
+        raise HTTPException(status_code=404, detail=f"Cow '{animal_tag}' not found.")
+    return dossier
 
 @router.get("/feeds", response_model=FeedsResponse)
 def get_feeds():
@@ -434,10 +448,13 @@ class SendTestSMSRequest(BaseModel):
     message: Optional[str] = None
     language: Optional[str] = "en"
     notification_id: Optional[str] = None
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_from_number: Optional[str] = None
 
 @router.post("/notifications/sms/send-test")
 async def send_test_sms_endpoint(payload: SendTestSMSRequest):
-    """Sends or simulates a test SMS to an Indian mobile number."""
+    """Sends or simulates a test SMS to an Indian mobile number via configured provider or Twilio."""
     default_msg = (
         "FarmWise Alert: Milk production dropped by 35 L on Day 11 following heatwave (THI 86.8). Check your dashboard for cooling actions."
         if payload.language != "kn"
@@ -449,7 +466,10 @@ async def send_test_sms_endpoint(payload: SendTestSMSRequest):
             phone_number=payload.phone_number,
             message_text=msg_to_send,
             language=payload.language or "en",
-            notification_id=payload.notification_id
+            notification_id=payload.notification_id,
+            twilio_account_sid=payload.twilio_account_sid,
+            twilio_auth_token=payload.twilio_auth_token,
+            twilio_from_number=payload.twilio_from_number
         )
         return res
     except ValueError as e:

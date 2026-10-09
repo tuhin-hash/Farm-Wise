@@ -346,3 +346,60 @@ export interface VoiceTranscribeResponse {
   confidence?: number;
   model: string;
 }
+
+export interface CowSummary {
+  animal_tag: string;
+  breed: string;
+  category: string;
+  days_in_milk: number;
+  parity: number;
+  calving_date: string;
+  current_daily_yield_litres: number;
+  baseline_daily_yield_litres: number;
+  heart_rate_bpm: number;
+  rectal_temperature_celsius: number;
+  respiration_rate_bpm: number;
+  rumen_contractions_per_2min: number;
+  rumen_fill_score: number;
+  locomotion_score: number;
+  california_mastitis_risk: string;
+  appetite_observation: string;
+  suspected_issue: string;
+  urgency_level: string;
+  veterinary_escalation: boolean;
+  health_status: 'CRITICAL' | 'WARNING' | 'OBSERVATION' | 'HEALTHY';
+  daily_concentrate_kg?: number;
+  water_intake_estimate_litres?: number;
+  veterinary_assessment?: VeterinaryAssessment;
+}
+
+export interface CowDossier {
+  farm_id: string;
+  farm_name: string;
+  location: string;
+  generated_at: string;
+  cow: CowSummary;
+  reference_standard: string;
+  vital_ranges: Record<string, { min: number; max: number; unit: string; description: string }>;
+  environmental_thi: number;
+  production_history_14d: {
+    day: number;
+    date: string;
+    milk_litres: number;
+    baseline_litres: number;
+    thi: number;
+    status: string;
+    notes: string;
+  }[];
+  individual_ration: {
+    concentrate_kg: number;
+    green_fodder_kg: number;
+    dry_fodder_kg: number;
+    mineral_mixture_grams: number;
+    clean_water_requirement_litres: number;
+    notes: string;
+  };
+  immediate_farm_actions: string[];
+  responsible_ai_disclaimer: string;
+}
+

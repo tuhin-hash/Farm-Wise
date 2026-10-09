@@ -25,6 +25,7 @@ export interface DashboardViewProps {
   data: DashboardData | null;
   onNavigateToArena?: () => void;
   onNavigateSimulator?: () => void;
+  onNavigateToCowReport?: (tag: string) => void;
   onRefresh?: () => void;
   isLoading?: boolean;
 }
@@ -33,6 +34,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   data,
   onNavigateToArena,
   onNavigateSimulator,
+  onNavigateToCowReport,
   onRefresh: _onRefresh,
   isLoading: _isLoading
 }) => {
@@ -558,6 +560,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <td className="py-3 text-stone-600 max-w-xs">{animal.suspected_issue}</td>
                     <td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {onNavigateToCowReport && (
+                          <button
+                            onClick={() => onNavigateToCowReport(animal.animal_tag)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                            title={`Open full health & milk dossier for ${animal.animal_tag}`}
+                          >
+                            <span>Full Dossier &rarr;</span>
+                          </button>
+                        )}
                         {animal.veterinary_escalation ? (
                           <button
                             onClick={() => setSelectedVetAnimal(animal)}

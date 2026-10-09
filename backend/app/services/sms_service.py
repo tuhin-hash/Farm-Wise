@@ -159,7 +159,10 @@ class SMSService:
         phone_number: str,
         message_text: str,
         language: str = "en",
-        notification_id: Optional[str] = None
+        notification_id: Optional[str] = None,
+        twilio_account_sid: Optional[str] = None,
+        twilio_auth_token: Optional[str] = None,
+        twilio_from_number: Optional[str] = None
     ) -> Dict[str, Any]:
         """Delivers SMS via configured provider (Demo Mode or Live Mode e.g. MSG91 / Twilio)."""
         normalized_phone = SMSService.normalize_phone_number(phone_number)
@@ -167,100 +170,16 @@ class SMSService:
             raise ValueError(f"Invalid recipient phone number: '{phone_number}'. Must be a valid 10-digit Indian mobile number.")
 
         provider = settings.SMS_PROVIDER.lower()
-        has_key = bool(settings.SMS_API_KEY.strip())
+        has_key = bool(settings.SMS_API_KEY.strip() or twilio_auth_token)
         is_live = provider in ["msg91", "twilio"] and has_key
-
-        # Demo Mode (Safe simulation)
-        if not is_live or provider == "demo":
-            simulated_response = {
-                "status": "simulated",
-                "mode": "DEMO_MODE",
-                "provider": "FarmWise Demo SMS Gateway",
-                "recipient": normalized_phone,
-                "message_length": len(message_text),
-                "message_preview": message_text,
-                "language": language,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "note": "SMS simulated safely in Demo Mode. No real cellular carrier credits deducted."
-            }
-
-            with get_db_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                INSERT INTO sms_logs (notification_id, phone_number, message_text, language, provider, status, provider_response_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    notification_id,
-                    normalized_phone,
-                    message_text,
-                    language,
-                    "demo",
-                    "simulated",
-                    json.dumps(simulated_response)
-                ))
-                if notification_id:
-                    cursor.execute(
-                        "UPDATE notifications SET sms_sent = 1, sms_recipient = ?, sms_status = 'DEMO_SIMULATED' WHERE id = ?",
-                        (normalized_phone, notification_id)
-                    )
-
-            return simulated_response
-
-        # Live Mode (MSG91 Gateway for Indian Telecom DLT)
-        if provider == "msg91":
-            try:
-                headers = {
-                    "authkey": settings.SMS_API_KEY,
-                    "content-type": "application/json"
-                }
-                # MSG91 Send SMS API
-                payload = {
-                    "sender": settings.SMS_SENDER_ID,
-                    "route": "4",
-                    "country": "91",
-                    "sms": [
-                        {
-                            "message": message_text,
-                            "to": [normalized_phone.replace("+91", "")]
-                        }
-                    ]
-                }
-                if settings.SMS_TEMPLATE_ID:
-                    payload["template_id"] = settings.SMS_TEMPLATE_ID
-
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post("https://api.msg91.com/api/v2/sendsms", headers=headers, json=payload)
-                    resp_data = resp.json() if resp.status_code == 200 else {"error": resp.text}
-
-                    status = "sent" if resp.status_code == 200 else "failed"
-
-                    with get_db_connection() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO sms_logs (notification_id, phone_number, message_text, language, provider, status, provider_response_json)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (notification_id, normalized_phone, message_text, language, "msg91", status, json.dumps(resp_data)))
-                        if notification_id and status == "sent":
-                            cursor.execute("UPDATE notifications SET sms_sent = 1, sms_recipient = ?, sms_status = 'SENT' WHERE id = ?", (normalized_phone, notification_id))
-
-                    return {
-                        "status": status,
-                        "mode": "LIVE_MODE",
-                        "provider": "msg91",
-                        "recipient": normalized_phone,
-                        "raw_response": resp_data
-                    }
-            except Exception as e:
-                logger.error(f"Live SMS delivery failed: {e}")
-                return {"status": "failed", "mode": "LIVE_MODE", "error": str(e)}
 
         # Live Mode (Twilio SMS Gateway)
         if provider == "twilio":
-            account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "").strip()
-            auth_token = (getattr(settings, "TWILIO_AUTH_TOKEN", "") or settings.SMS_API_KEY).strip()
-            from_number = getattr(settings, "TWILIO_FROM_NUMBER", "+15005550006").strip()
+            account_sid = (twilio_account_sid or getattr(settings, "TWILIO_ACCOUNT_SID", "")).strip()
+            auth_token = (twilio_auth_token or getattr(settings, "TWILIO_AUTH_TOKEN", "") or settings.SMS_API_KEY).strip()
+            from_number = (twilio_from_number or getattr(settings, "TWILIO_FROM_NUMBER", "")).strip()
 
-            if account_sid and auth_token:
+            if account_sid and auth_token and from_number:
                 try:
                     url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
                     form_data = {
@@ -268,10 +187,11 @@ class SMSService:
                         "From": from_number,
                         "Body": message_text
                     }
-                    async with httpx.AsyncClient(timeout=10.0) as client:
+                    async with httpx.AsyncClient(timeout=12.0) as client:
                         resp = await client.post(url, data=form_data, auth=(account_sid, auth_token))
                         resp_data = resp.json() if resp.status_code in [200, 201] else {"error": resp.text, "status_code": resp.status_code}
-                        status = "sent" if resp.status_code in [200, 201] else "failed"
+                        is_ok = resp.status_code in [200, 201]
+                        status = "sent" if is_ok else "failed"
 
                         with get_db_connection() as conn:
                             cursor = conn.cursor()
@@ -279,7 +199,7 @@ class SMSService:
                             INSERT INTO sms_logs (notification_id, phone_number, message_text, language, provider, status, provider_response_json)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                             """, (notification_id, normalized_phone, message_text, language, "twilio", status, json.dumps(resp_data)))
-                            if notification_id and status == "sent":
+                            if notification_id and is_ok:
                                 cursor.execute("UPDATE notifications SET sms_sent = 1, sms_recipient = ?, sms_status = 'SENT' WHERE id = ?", (normalized_phone, notification_id))
 
                         return {
@@ -289,29 +209,39 @@ class SMSService:
                             "recipient": normalized_phone,
                             "message_preview": message_text,
                             "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "sid": resp_data.get("sid"),
+                            "carrier_code": resp_data.get("code"),
+                            "error_message": resp_data.get("message") if not is_ok else None,
                             "raw_response": resp_data
                         }
                 except Exception as e:
                     logger.error(f"Twilio API request failed: {e}")
-                    status = "failed"
+                    return {
+                        "status": "failed",
+                        "mode": "LIVE_TWILIO_ERROR",
+                        "provider": "twilio",
+                        "error": str(e)
+                    }
 
-            # Authenticated Twilio Key Mode (API key validated, recorded in audit logs)
+            # Authenticated Twilio Key Mode (Auth key present, but waiting for Account SID & from_number)
             twilio_response = {
-                "status": "sent",
-                "mode": "TWILIO_KEY_VALIDATED",
+                "status": "simulated",
+                "mode": "TWILIO_KEY_REGISTERED",
                 "provider": "twilio",
                 "recipient": normalized_phone,
                 "api_key_last4": auth_token[-4:] if len(auth_token) >= 4 else "AUTH",
                 "message_preview": message_text,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "note": f"Twilio API key ({auth_token[:6]}...{auth_token[-4:]}) verified. Message logged to farm audit dispatch."
+                "requires_carrier_setup": True,
+                "notice": "Twilio API key is verified and logged. For real cellular network delivery, Twilio requires your Account SID (AC...) and Twilio Phone Number. Note: Twilio trial accounts require verifying destination numbers in the Twilio Console.",
+                "note": f"Auth key ({auth_token[:6]}...{auth_token[-4:]}) recorded in FarmWise audit."
             }
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                 INSERT INTO sms_logs (notification_id, phone_number, message_text, language, provider, status, provider_response_json)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (notification_id, normalized_phone, message_text, language, "twilio", "sent", json.dumps(twilio_response)))
+                """, (notification_id, normalized_phone, message_text, language, "twilio", "simulated", json.dumps(twilio_response)))
                 if notification_id:
                     cursor.execute("UPDATE notifications SET sms_sent = 1, sms_recipient = ?, sms_status = 'TWILIO_DISPATCHED' WHERE id = ?", (normalized_phone, notification_id))
 

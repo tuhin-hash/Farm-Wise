@@ -174,8 +174,63 @@ CRITICAL SAFETY RULES:
         base_milk = daily_prod.get("baseline_litres", 445.0)
         drop_litres = round(base_milk - curr_milk, 1)
 
-        # Scenario A: Heat Stress & Production Decline Query
-        if any(w in q_lower for w in ["milk", "less", "drop", "hot", "weather", "heat", "first", "ಹಾಲು", "ಕಡಿಮೆ", "ಬಿಸಿಲು", "ತಾಪಮಾನ", "ಮೊದಲು"]):
+        # Scenario 1: Warm Greeting & Conversational Check
+        words = q_lower.split()
+        is_just_greeting = any(w in q_lower for w in ["hello", "hi", "hey", "namaskara", "namaste", "good morning", "good afternoon", "good evening", "ಹಲೋ", "ನಮಸ್ಕಾರ", "ಶುಭೋದಯ", "ನಮಸ್ತೆ"]) and not any(w in q_lower for w in ["milk", "feed", "cow", "price", "temp", "thi", "drop"])
+        
+        if is_just_greeting or q_lower.strip() in ["hello", "hi", "hey", "namaskara", "namaste", "ಹಲೋ", "ನಮಸ್ಕಾರ"]:
+            if is_kannada:
+                text_resp = (
+                    "ನಮಸ್ಕಾರ! ಫಾರ್ಮ್‌ವೈಸ್‌ಗೆ ಸುಸ್ವಾಗತ. ನಿಮ್ಮೊಂದಿಗೆ ಮಾತನಾಡಲು ಸಂತೋಷವಾಗಿದೆ!\n\n"
+                    "ಇಂದು ನಿಮ್ಮ ಮಂಡ್ಯ ಡೇರಿ ಫಾರ್ಮ್‌ನಲ್ಲಿ ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ? ನೀವು ಈ ಕೆಳಗಿನ ವಿಷಯಗಳ ಬಗ್ಗೆ ಕೇಳಬಹುದು:\n"
+                    "1. ದಿನ 11 ರಂದು 35 ಲೀಟರ್ ಹಾಲಿನ ಇಳಿಕೆ ಮತ್ತು ತಾಪಮಾನದ ಕಾರಣಗಳು.\n"
+                    "2. ಜ್ವರವಿರುವ ಹಸು KA-MAN-104 ಅಥವಾ ಕೆಚ್ಚಲಬಾವು ಇರುವ KA-MAN-112 ನ ಆರೋಗ್ಯ ವರದಿ.\n"
+                    "3. ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ ಕಡಿಮೆ ವೆಚ್ಚದ DORB ಪರ್ಯಾಯ ಆಹಾರ ಸೂತ್ರಗಳು.\n"
+                    "4. ನಿಮ್ಮ ಮೊಬೈಲ್‌ಗೆ ಎಚ್ಚರಿಕೆ SMS ಸಂದೇಶ ಕಳುಹಿಸುವುದು."
+                )
+                audio_resp = (
+                    "ನಮಸ್ಕಾರ! ಫಾರ್ಮ್‌ವೈಸ್‌ಗೆ ಸುಸ್ವಾಗತ. ಇಂದು ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ? "
+                    "ಹಾಲಿನ ಉತ್ಪಾದನೆ, ಹಸುಗಳ ಆರೋಗ್ಯ ತಪಾಸಣೆ, ಅಥವಾ ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ ಮೇವಿನ ವೆಚ್ಚ ಉಳಿತಾಯದ ಬಗ್ಗೆ ನೀವು ಕೇಳಬಹುದು."
+                )
+            else:
+                text_resp = (
+                    "Hello! Great to hear from you. Welcome to FarmWise at NammaHerd Dairy!\n\n"
+                    "How can I help you today? Here is what you can ask me:\n"
+                    "• **Milk Production Drop:** Why did our herd drop by 35 litres on Day 11?\n"
+                    "• **Individual Cow Health Report:** Check vitals for flagged cows like KA-MAN-104 (39.9°C fever) or KA-MAN-112.\n"
+                    "• **Feed Cost Savings:** How can we substitute rising commercial concentrate (₹33/kg) with DORB in the Decision Arena?\n"
+                    "• **Mobile SMS Alerts:** How to dispatch immediate thermal and veterinary alerts to your phone."
+                )
+                audio_resp = (
+                    "Hello! Great to hear from you. Welcome to FarmWise at NammaHerd Dairy! How can I help you today? "
+                    "You can ask about today's 35-litre milk drop, check on sick cows like KA-MAN-104, or explore feed cost savings in the Decision Arena."
+                )
+
+        # Scenario 2: Single Cow Report / Individual Animal Dossier Query
+        elif any(w in q_lower for w in ["report", "single cow", "cow report", "dossier", "individual cow", "health card", "104 report", "112 report", "ವರದಿ", "ಹಸುವಿನ ವರದಿ"]):
+            if is_kannada:
+                text_resp = (
+                    "ಏಕ ಹಸುವಿನ ಸಂಪೂರ್ಣ ಆರೋಗ್ಯ ಮತ್ತು ಉತ್ಪಾದನಾ ವರದಿ ವಿಭಾಗವನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ.\n\n"
+                    "ನಿಮ್ಮ ಹಿಂಡಿನ 24 ಹಸುಗಳಲ್ಲಿ ಪ್ರತಿಯೊಂದರ ಸಂಪೂರ್ಣ ಮರ್ಕ್ ವೈದ್ಯಕೀಯ ವರದಿ ಲಭ್ಯವಿದೆ:\n"
+                    "• **ಹಸು KA-MAN-104:** ಹೆಚ್ಚಿನ ಜ್ವರ (39.9°C), ನಾಡಿಮಿಡಿತ 105 BPM - ತುರ್ತು ಚಿಕಿತ್ಸೆ ಅಗತ್ಯ.\n"
+                    "• **ಹಸು KA-MAN-112:** ಕೆಚ್ಚಲು ಗಟ್ಟಿಯಾಗಿದೆ, 35% ಹಾಲು ಇಳಿಕೆ - ಮಾಸ್ಟಿಟಿಸ್ ತಪಾಸಣೆ ಅಗತ್ಯ.\n"
+                    "• **ಹಸು KA-MAN-101:** ಸಾಮಾನ್ಯ ಸ್ಥಿತಿ, ದೈನಂದಿನ 22 ಲೀಟರ್ ಹಾಲು ಉತ್ಪಾದನೆ.\n\n"
+                    "ಸಂಪೂರ್ಣ ಡಿಜಿಟಲ್ ಹೆಲ್ತ್ ಕಾರ್ಡ್ ವೀಕ್ಷಿಸಲು ಅಥವಾ ಪ್ರಿಂಟ್ ಮಾಡಲು 'Cow Health Reports' ಟ್ಯಾಬ್ ತೆರೆಯಿರಿ."
+                )
+                audio_resp = "ಏಕ ಹಸುವಿನ ಸಂಪೂರ್ಣ ವೈದ್ಯಕೀಯ ವರದಿಯನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. ಹಸು KA-MAN-104 ಮತ್ತು ಇತರ ಎಲ್ಲಾ ಹಸುಗಳ ಸಂಪೂರ್ಣ ನಾಡಿಮಿಡಿತ ಮತ್ತು ಹಾಲಿನ ವಿವರಗಳನ್ನು ನೀವು ಪರಿಶೀಲಿಸಬಹುದು."
+            else:
+                text_resp = (
+                    "Opening the Complete Single Cow Health & Production Dossier.\n\n"
+                    "You can inspect full Merck physiological vitals, rectal temperature, lactation DIM, and clinical triage for all 24 cows in your herd:\n"
+                    "• **Cow KA-MAN-104:** Pyrexia (39.9°C), Tachycardia (105 BPM) - Critical Vet Triage.\n"
+                    "• **Cow KA-MAN-112:** Localized quarter firmness, 35% individual yield drop - Mastitis Screening.\n"
+                    "• **Cow KA-MAN-101:** High-yielding HF Cross (22.0 L/day) - Normal physiological state.\n\n"
+                    "Open the dedicated 'Cow Health Reports' tab to view individual vital gauges and print the clinical dossier."
+                )
+                audio_resp = "Opening the Single Cow Clinical Report dossier. You can inspect comprehensive vital signs, lactation history, and veterinary triage guidance for any animal in your herd."
+
+        # Scenario 3: Heat Stress & Production Decline Query
+        elif any(w in q_lower for w in ["milk", "less", "drop", "hot", "weather", "heat", "first", "ಹಾಲು", "ಕಡಿಮೆ", "ಬಿಸಿಲು", "ತಾಪಮಾನ", "ಮೊದಲು"]):
             if is_kannada:
                 text_resp = (
                     f"ನಮಸ್ಕಾರ. ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ದಿನ 11 ರಂದು ತಾಪಮಾನ 35.5°C ಮತ್ತು THI 86.8 ಕ್ಕೆ ತಲುಪಿದ ಕಾರಣ, "
@@ -259,7 +314,12 @@ CRITICAL SAFETY RULES:
                 audio_resp = f"Hello. Your herd is currently producing {curr_milk} litres of milk daily under heat stress conditions. You can ask about milk trends, flagged cow vitals, or feed cost savings in the Decision Arena."
 
         is_triage = "104" in q_lower or "fever" in q_lower or "sick" in q_lower
-        rec_tab = "arena" if any(w in q_lower for w in ["feed", "price", "dorb", "cost", "strategy", "arena", "ತಂತ್ರ", "ಅಖಾಡ"]) else "overview"
+        if any(w in q_lower for w in ["report", "single cow", "cow report", "dossier", "health card", "ವರದಿ"]):
+            rec_tab = "cow-reports"
+        elif any(w in q_lower for w in ["feed", "price", "dorb", "cost", "strategy", "arena", "ತಂತ್ರ", "ಅಖಾಡ"]):
+            rec_tab = "arena"
+        else:
+            rec_tab = "overview"
 
         return {
             "query": query,

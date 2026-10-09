@@ -220,3 +220,30 @@ def test_api_notifications_and_sms(client: TestClient):
     res_bad = client.post("/api/notifications/sms/send-test", json=bad_sms)
     assert res_bad.status_code == 400
 
+def test_api_cows_endpoints(client: TestClient):
+    # Test catalog of cows
+    res_catalog = client.get("/api/cows?farm_id=demo-farm-01")
+    assert res_catalog.status_code == 200
+    catalog = res_catalog.json()
+    assert "cows" in catalog
+    assert len(catalog["cows"]) >= 4
+    cow_tags = [c["animal_tag"] for c in catalog["cows"]]
+    assert "KA-MAN-104" in cow_tags
+    assert "KA-MAN-112" in cow_tags
+
+    # Test single cow dossier
+    res_dossier = client.get("/api/cows/KA-MAN-104?farm_id=demo-farm-01")
+    assert res_dossier.status_code == 200
+    dossier = res_dossier.json()
+    assert dossier["cow"]["animal_tag"] == "KA-MAN-104"
+    assert dossier["reference_standard"] == "Merck Veterinary Manual (Adult Bovine Physiological Norms)"
+    assert "production_history_14d" in dossier
+    assert "individual_ration" in dossier
+    assert len(dossier["immediate_farm_actions"]) > 0
+    assert "responsible_ai_disclaimer" in dossier
+
+    # Test non-existent cow 404
+    res_404 = client.get("/api/cows/KA-NON-EXISTENT")
+    assert res_404.status_code == 404
+
+

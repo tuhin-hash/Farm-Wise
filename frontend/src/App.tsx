@@ -7,6 +7,7 @@ import { DecisionArenaView } from './components/DecisionArenaView';
 import { SimulatorView } from './components/SimulatorView';
 import { HerdTrendsView } from './components/HerdTrendsView';
 import { DecisionHistoryView } from './components/DecisionHistoryView';
+import { SingleCowReportView } from './components/SingleCowReportView';
 import { ResponsibleAIFooter } from './components/ResponsibleAIFooter';
 import { VoiceChatModal } from './components/VoiceChatModal';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -16,6 +17,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('landing');
+  const [selectedCowTag, setSelectedCowTag] = useState<string>('KA-MAN-104');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -121,8 +123,20 @@ export function App() {
               data={dashboard}
               onNavigateToArena={() => setActiveTab('arena')}
               onNavigateSimulator={() => setActiveTab('simulator')}
+              onNavigateToCowReport={(tag) => {
+                setSelectedCowTag(tag);
+                setActiveTab('cow-reports');
+              }}
               onRefresh={loadData}
               isLoading={isLoading}
+            />
+          )}
+
+          {activeTab === 'cow-reports' && (
+            <SingleCowReportView
+              initialAnimalTag={selectedCowTag}
+              onSelectAnimalTag={setSelectedCowTag}
+              onNavigateTab={setActiveTab}
             />
           )}
 
