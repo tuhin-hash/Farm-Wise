@@ -1,0 +1,185 @@
+{
+  "data_disclaimer": "Sample nutritional values for demonstration. Not verified laboratory analysis. Do not use for actual ration formulation without expert consultation.",
+  "feeds": [
+    {
+      "feed_id": "feed-soybean-meal",
+      "name": "Soybean Meal",
+      "category": "concentrate",
+      "current_price_inr_per_kg": 45.0,
+      "previous_price_inr_per_kg": 38.0,
+      "price_change_pct": 18.4,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 44.0,
+        "tdn_pct": 75.0,
+        "crude_fibre_pct": 7.0,
+        "calcium_pct": 0.3,
+        "phosphorus_pct": 0.65,
+        "metabolizable_energy_mcal": 2.65
+      },
+      "notes": "High-quality protein source. Price increase due to market conditions."
+    },
+    {
+      "feed_id": "feed-cottonseed-meal",
+      "name": "Cottonseed Meal (Decorticated)",
+      "category": "concentrate",
+      "current_price_inr_per_kg": 30.0,
+      "previous_price_inr_per_kg": 28.0,
+      "price_change_pct": 7.1,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 36.0,
+        "tdn_pct": 70.0,
+        "crude_fibre_pct": 12.0,
+        "calcium_pct": 0.2,
+        "phosphorus_pct": 1.0,
+        "metabolizable_energy_mcal": 2.45
+      },
+      "notes": "Lower protein than soybean meal but more affordable. Contains gossypol — limit to 20-25% of concentrate mix."
+    },
+    {
+      "feed_id": "feed-groundnut-cake",
+      "name": "Groundnut Cake (Expeller)",
+      "category": "concentrate",
+      "current_price_inr_per_kg": 40.0,
+      "previous_price_inr_per_kg": 38.0,
+      "price_change_pct": 5.3,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 40.0,
+        "tdn_pct": 73.0,
+        "crude_fibre_pct": 8.0,
+        "calcium_pct": 0.1,
+        "phosphorus_pct": 0.6,
+        "metabolizable_energy_mcal": 2.55
+      },
+      "notes": "Good protein source. Check for aflatoxin contamination. Locally available in Karnataka."
+    },
+    {
+      "feed_id": "feed-maize-grain",
+      "name": "Maize Grain (Crushed)",
+      "category": "concentrate",
+      "current_price_inr_per_kg": 22.0,
+      "previous_price_inr_per_kg": 20.0,
+      "price_change_pct": 10.0,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 9.0,
+        "tdn_pct": 82.0,
+        "crude_fibre_pct": 2.5,
+        "calcium_pct": 0.05,
+        "phosphorus_pct": 0.3,
+        "metabolizable_energy_mcal": 3.10
+      },
+      "notes": "Energy-dense. Low protein — must be paired with protein source."
+    },
+    {
+      "feed_id": "feed-wheat-bran",
+      "name": "Wheat Bran",
+      "category": "concentrate",
+      "current_price_inr_per_kg": 18.0,
+      "previous_price_inr_per_kg": 17.0,
+      "price_change_pct": 5.9,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 15.0,
+        "tdn_pct": 65.0,
+        "crude_fibre_pct": 10.0,
+        "calcium_pct": 0.12,
+        "phosphorus_pct": 1.15,
+        "metabolizable_energy_mcal": 2.20
+      },
+      "notes": "Moderate protein and energy. Good bulking agent in concentrate mixes."
+    },
+    {
+      "feed_id": "feed-napier-grass",
+      "name": "Napier Grass (CO-5)",
+      "category": "green_fodder",
+      "current_price_inr_per_kg": 3.0,
+      "previous_price_inr_per_kg": 3.0,
+      "price_change_pct": 0.0,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 8.0,
+        "tdn_pct": 55.0,
+        "crude_fibre_pct": 30.0,
+        "calcium_pct": 0.4,
+        "phosphorus_pct": 0.25,
+        "metabolizable_energy_mcal": 1.85
+      },
+      "notes": "Cultivated on farm. High yield per acre. Best harvested at 60-day interval."
+    },
+    {
+      "feed_id": "feed-maize-fodder",
+      "name": "Green Maize Fodder",
+      "category": "green_fodder",
+      "current_price_inr_per_kg": 4.0,
+      "previous_price_inr_per_kg": 3.5,
+      "price_change_pct": 14.3,
+      "availability": "limited",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 7.5,
+        "tdn_pct": 58.0,
+        "crude_fibre_pct": 25.0,
+        "calcium_pct": 0.35,
+        "phosphorus_pct": 0.2,
+        "metabolizable_energy_mcal": 1.95
+      },
+      "notes": "Seasonal. Higher energy than Napier. Limited availability in current season."
+    },
+    {
+      "feed_id": "feed-paddy-straw",
+      "name": "Paddy Straw",
+      "category": "dry_fodder",
+      "current_price_inr_per_kg": 5.0,
+      "previous_price_inr_per_kg": 4.5,
+      "price_change_pct": 11.1,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 3.5,
+        "tdn_pct": 45.0,
+        "crude_fibre_pct": 35.0,
+        "calcium_pct": 0.2,
+        "phosphorus_pct": 0.08,
+        "metabolizable_energy_mcal": 1.50
+      },
+      "notes": "Low nutritional value but locally abundant. Often used as roughage filler."
+    },
+    {
+      "feed_id": "feed-ragi-straw",
+      "name": "Ragi Straw (Finger Millet Straw)",
+      "category": "dry_fodder",
+      "current_price_inr_per_kg": 4.5,
+      "previous_price_inr_per_kg": 4.0,
+      "price_change_pct": 12.5,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 5.0,
+        "tdn_pct": 48.0,
+        "crude_fibre_pct": 32.0,
+        "calcium_pct": 0.45,
+        "phosphorus_pct": 0.1,
+        "metabolizable_energy_mcal": 1.60
+      },
+      "notes": "Better than paddy straw. Common in Karnataka. Good calcium source."
+    },
+    {
+      "feed_id": "feed-mineral-mix",
+      "name": "Mineral Mixture",
+      "category": "supplement",
+      "current_price_inr_per_kg": 85.0,
+      "previous_price_inr_per_kg": 80.0,
+      "price_change_pct": 6.25,
+      "availability": "available",
+      "nutrition_per_kg": {
+        "crude_protein_pct": 0.0,
+        "tdn_pct": 0.0,
+        "crude_fibre_pct": 0.0,
+        "calcium_pct": 26.0,
+        "phosphorus_pct": 13.0,
+        "metabolizable_energy_mcal": 0.0
+      },
+      "notes": "Essential supplement. 50g/cow/day recommended. Contains Ca, P, and trace minerals."
+    }
+  ]
+}

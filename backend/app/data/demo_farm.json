@@ -1,0 +1,86 @@
+{
+  "farm": {
+    "farm_id": "demo-farm-01",
+    "name": "Nandini Dairy Farm",
+    "location": "Mandya, Karnataka, India",
+    "owner": "Rajesh Kumar",
+    "type": "Dairy",
+    "established": "2018",
+    "data_mode": "synthetic_demo",
+    "data_disclaimer": "All data is synthetic and for demonstration purposes only. Not based on real farm observations."
+  },
+  "animals": [
+    {"animal_id": "COW-001", "name": "Lakshmi", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 22.0, "current_daily_milk_litres": 20.5, "health_flag": null, "notes": "Consistent performer"},
+    {"animal_id": "COW-002", "name": "Ganga", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 20.0, "current_daily_milk_litres": 18.0, "health_flag": "reduced_appetite", "notes": "Appetite decline noted last 3 days"},
+    {"animal_id": "COW-003", "name": "Kaveri", "breed": "Jersey Crossbred", "age_years": 6, "lactation_number": 4, "status": "active", "avg_daily_milk_litres": 18.0, "current_daily_milk_litres": 16.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-004", "name": "Yamuna", "breed": "HF Crossbred", "age_years": 3, "lactation_number": 1, "status": "active", "avg_daily_milk_litres": 16.0, "current_daily_milk_litres": 14.0, "health_flag": "low_water_intake", "notes": "Water intake down ~20%"},
+    {"animal_id": "COW-005", "name": "Saraswati", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 21.0, "current_daily_milk_litres": 19.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-006", "name": "Parvati", "breed": "Jersey Crossbred", "age_years": 7, "lactation_number": 5, "status": "active", "avg_daily_milk_litres": 17.0, "current_daily_milk_litres": 15.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-007", "name": "Radha", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 19.5, "current_daily_milk_litres": 17.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-008", "name": "Sita", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 20.0, "current_daily_milk_litres": 18.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-009", "name": "Durga", "breed": "Jersey Crossbred", "age_years": 6, "lactation_number": 4, "status": "active", "avg_daily_milk_litres": 17.5, "current_daily_milk_litres": 16.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-010", "name": "Annapurna", "breed": "HF Crossbred", "age_years": 3, "lactation_number": 1, "status": "active", "avg_daily_milk_litres": 15.5, "current_daily_milk_litres": 14.0, "health_flag": "mild_lameness", "notes": "Slight limp observed, monitor"},
+    {"animal_id": "COW-011", "name": "Meenakshi", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 19.0, "current_daily_milk_litres": 17.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-012", "name": "Bhavani", "breed": "Jersey Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 18.5, "current_daily_milk_litres": 17.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-013", "name": "Tulsi", "breed": "HF Crossbred", "age_years": 6, "lactation_number": 4, "status": "active", "avg_daily_milk_litres": 18.0, "current_daily_milk_litres": 16.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-014", "name": "Kamala", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 20.5, "current_daily_milk_litres": 19.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-015", "name": "Janaki", "breed": "Jersey Crossbred", "age_years": 7, "lactation_number": 5, "status": "active", "avg_daily_milk_litres": 16.5, "current_daily_milk_litres": 15.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-016", "name": "Rukmini", "breed": "HF Crossbred", "age_years": 3, "lactation_number": 1, "status": "active", "avg_daily_milk_litres": 15.0, "current_daily_milk_litres": 13.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-017", "name": "Shakuntala", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 19.0, "current_daily_milk_litres": 17.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-018", "name": "Savitri", "breed": "Jersey Crossbred", "age_years": 6, "lactation_number": 4, "status": "active", "avg_daily_milk_litres": 17.0, "current_daily_milk_litres": 15.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-019", "name": "Vaishali", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 20.0, "current_daily_milk_litres": 18.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-020", "name": "Mandakini", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 21.0, "current_daily_milk_litres": 19.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-021", "name": "Padmini", "breed": "Jersey Crossbred", "age_years": 7, "lactation_number": 5, "status": "active", "avg_daily_milk_litres": 16.0, "current_daily_milk_litres": 14.5, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-022", "name": "Gomathi", "breed": "HF Crossbred", "age_years": 4, "lactation_number": 2, "status": "active", "avg_daily_milk_litres": 18.5, "current_daily_milk_litres": 17.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-023", "name": "Sharada", "breed": "HF Crossbred", "age_years": 5, "lactation_number": 3, "status": "active", "avg_daily_milk_litres": 19.5, "current_daily_milk_litres": 18.0, "health_flag": null, "notes": ""},
+    {"animal_id": "COW-024", "name": "Vasundhara", "breed": "Jersey Crossbred", "age_years": 6, "lactation_number": 4, "status": "active", "avg_daily_milk_litres": 17.5, "current_daily_milk_litres": 16.0, "health_flag": null, "notes": ""}
+  ],
+  "production_history": [
+    {"date": "2026-09-25", "total_milk_litres": 445.0, "avg_per_cow": 18.54},
+    {"date": "2026-09-26", "total_milk_litres": 442.0, "avg_per_cow": 18.42},
+    {"date": "2026-09-27", "total_milk_litres": 438.0, "avg_per_cow": 18.25},
+    {"date": "2026-09-28", "total_milk_litres": 435.0, "avg_per_cow": 18.13},
+    {"date": "2026-09-29", "total_milk_litres": 430.0, "avg_per_cow": 17.92},
+    {"date": "2026-09-30", "total_milk_litres": 425.0, "avg_per_cow": 17.71},
+    {"date": "2026-10-01", "total_milk_litres": 422.0, "avg_per_cow": 17.58},
+    {"date": "2026-10-02", "total_milk_litres": 420.0, "avg_per_cow": 17.50},
+    {"date": "2026-10-03", "total_milk_litres": 417.0, "avg_per_cow": 17.38},
+    {"date": "2026-10-04", "total_milk_litres": 415.0, "avg_per_cow": 17.29},
+    {"date": "2026-10-05", "total_milk_litres": 413.0, "avg_per_cow": 17.21},
+    {"date": "2026-10-06", "total_milk_litres": 412.0, "avg_per_cow": 17.17},
+    {"date": "2026-10-07", "total_milk_litres": 410.0, "avg_per_cow": 17.08},
+    {"date": "2026-10-08", "total_milk_litres": 408.0, "avg_per_cow": 17.00}
+  ],
+  "environment": [
+    {"date": "2026-10-05", "max_temp_c": 36.2, "min_temp_c": 25.1, "humidity_pct": 72, "thi_index": 82, "heat_stress": "moderate"},
+    {"date": "2026-10-06", "max_temp_c": 37.0, "min_temp_c": 25.8, "humidity_pct": 70, "thi_index": 83, "heat_stress": "moderate"},
+    {"date": "2026-10-07", "max_temp_c": 37.5, "min_temp_c": 26.2, "humidity_pct": 74, "thi_index": 84, "heat_stress": "high"},
+    {"date": "2026-10-08", "max_temp_c": 38.1, "min_temp_c": 26.5, "humidity_pct": 75, "thi_index": 85, "heat_stress": "high"}
+  ],
+  "water_consumption": [
+    {"date": "2026-10-01", "total_litres": 2160, "avg_per_cow_litres": 90.0},
+    {"date": "2026-10-02", "total_litres": 2100, "avg_per_cow_litres": 87.5},
+    {"date": "2026-10-03", "total_litres": 2050, "avg_per_cow_litres": 85.4},
+    {"date": "2026-10-04", "total_litres": 2000, "avg_per_cow_litres": 83.3},
+    {"date": "2026-10-05", "total_litres": 1970, "avg_per_cow_litres": 82.1},
+    {"date": "2026-10-06", "total_litres": 1950, "avg_per_cow_litres": 81.3},
+    {"date": "2026-10-07", "total_litres": 1920, "avg_per_cow_litres": 80.0},
+    {"date": "2026-10-08", "total_litres": 1900, "avg_per_cow_litres": 79.2}
+  ],
+  "current_feed_plan": {
+    "concentrate_kg_per_cow": 6.0,
+    "green_fodder_kg_per_cow": 25.0,
+    "dry_fodder_kg_per_cow": 5.0,
+    "mineral_mix_g_per_cow": 50,
+    "primary_concentrate": "feed-soybean-meal",
+    "primary_green_fodder": "feed-napier-grass",
+    "primary_dry_fodder": "feed-paddy-straw"
+  },
+  "alerts": [
+    {"alert_id": "ALT-001", "type": "production_decline", "severity": "warning", "message": "Herd milk production declined ~8% over 14 days (445 to 408 litres/day)", "created_at": "2026-10-08"},
+    {"alert_id": "ALT-002", "type": "heat_stress", "severity": "warning", "message": "THI index at 85 — high heat stress conditions. Expect reduced feed intake and milk yield.", "created_at": "2026-10-08"},
+    {"alert_id": "ALT-003", "type": "water_consumption", "severity": "warning", "message": "Herd water consumption declined ~12% over 8 days despite rising temperatures", "created_at": "2026-10-08"},
+    {"alert_id": "ALT-004", "type": "individual_animal", "severity": "attention", "message": "COW-002 (Ganga): Reduced appetite for 3 days. COW-004 (Yamuna): Low water intake. COW-010 (Annapurna): Mild lameness observed.", "created_at": "2026-10-08"},
+    {"alert_id": "ALT-005", "type": "feed_cost", "severity": "info", "message": "Soybean meal price increased ~18% (from ₹38 to ₹45/kg) in last 30 days", "created_at": "2026-10-08"}
+  ]
+}
