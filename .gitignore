@@ -17,6 +17,7 @@ htmlcov/
 .mypy_cache/
 
 # Databases
+*.db
 *.db-journal
 
 # Environment variables
