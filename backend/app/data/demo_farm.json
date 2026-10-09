@@ -1,0 +1,145 @@
+{
+  "farm_id": "demo-farm-01",
+  "farm_name": "Sri Lakshmi Dairy Farm",
+  "location": "Mandya District, Karnataka, India",
+  "coordinates": {"lat": 12.5224, "lng": 76.8974},
+  "data_mode": "synthetic_demo",
+  "provenance_note": "Synthetic benchmark dataset representing a typical semi-intensive dairy herd in Southern Karnataka experiencing summer thermal stress and feed cost inflation.",
+  "animal_count": 24,
+  "breeds": {
+    "HF_Cross": 14,
+    "Jersey_Cross": 7,
+    "Gir_Indigenous": 3
+  },
+  "milk_sale_price_inr_per_litre": 38.0,
+  "daily_production": {
+    "current_litres": 410.0,
+    "baseline_litres": 445.0,
+    "trend_percentage": -7.87,
+    "current_daily_revenue_inr": 15580.0,
+    "baseline_daily_revenue_inr": 16910.0
+  },
+  "water_consumption": {
+    "current_litres_per_cow": 64.0,
+    "baseline_litres_per_cow": 78.0,
+    "trend_percentage": -17.95,
+    "alert_level": "WARNING",
+    "observation": "Daily water intake per cow dropped from 78L to 64L during a period when high ambient heat typically demands an increase to 95L-110L."
+  },
+  "current_feed_ration": {
+    "ration_name": "Standard High-Concentrate Summer Ration",
+    "total_daily_feed_cost_inr": 5424.0,
+    "cost_per_cow_per_day_inr": 226.0,
+    "estimated_daily_margin_inr": 10156.0,
+    "margin_assumptions": "Calculated as daily milk revenue (410L * ₹38 = ₹15,580) minus daily herd feed expenditure (₹5,424). Excludes fixed labour and electricity overheads.",
+    "items": [
+      {
+        "feed_id": "feed-conc-01",
+        "feed_name": "Commercial Dairy Concentrate (20% CP)",
+        "quantity_kg_per_cow": 4.5,
+        "unit_price_inr_per_kg": 33.0,
+        "daily_cost_herd_inr": 3564.0,
+        "price_change_note": "Recent price surge of +17.86% (from ₹28.0/kg to ₹33.0/kg)"
+      },
+      {
+        "feed_id": "feed-napier-01",
+        "feed_name": "Green Fodder (Hybrid Napier CO-4)",
+        "quantity_kg_per_cow": 18.0,
+        "unit_price_inr_per_kg": 2.5,
+        "daily_cost_herd_inr": 1080.0,
+        "price_change_note": "Farm cultivated / local procurement stable"
+      },
+      {
+        "feed_id": "feed-straw-01",
+        "feed_name": "Dry Fodder (Paddy Straw)",
+        "quantity_kg_per_cow": 5.0,
+        "unit_price_inr_per_kg": 4.5,
+        "daily_cost_herd_inr": 540.0,
+        "price_change_note": "Stable seasonal supply"
+      },
+      {
+        "feed_id": "feed-minmix-01",
+        "feed_name": "Commercial Mineral Mixture",
+        "quantity_kg_per_cow": 0.15,
+        "unit_price_inr_per_kg": 65.0,
+        "daily_cost_herd_inr": 234.0,
+        "price_change_note": "Standard maintenance supplement"
+      }
+    ]
+  },
+  "environmental_conditions": {
+    "ambient_temperature_celsius": 35.5,
+    "relative_humidity_percentage": 68.0,
+    "thi_index": 86.8,
+    "heat_stress_category": "MODERATE_TO_SEVERE",
+    "shed_ventilation_type": "Naturally ventilated with partial corrugated tin roof",
+    "recorded_at": "2026-05-14T14:30:00+05:30",
+    "interpretation": "THI exceeds critical threshold of 72. High heat and humidity cause accelerated respiration, reduced rumination, and heat-induced milk yield suppression."
+  },
+  "active_alerts": [
+    {
+      "id": "alert-01",
+      "severity": "HIGH",
+      "category": "ENVIRONMENTAL_HEAT_STRESS",
+      "message": "Ambient THI reached 86.8 (35.5°C, 68% RH). Severe heat stress index for lactating cows."
+    },
+    {
+      "id": "alert-02",
+      "severity": "WARNING",
+      "category": "WATER_INTAKE_ANOMALY",
+      "message": "Herd water consumption declined by 17.9% despite high ambient heat. Risk of water trough heating or restricted access."
+    },
+    {
+      "id": "alert-03",
+      "severity": "WARNING",
+      "category": "FEED_INFLATION",
+      "message": "Commercial concentrate price spiked +18% (₹28 -> ₹33/kg), elevating daily herd feed cost to ₹5,424."
+    },
+    {
+      "id": "alert-04",
+      "severity": "CRITICAL",
+      "category": "INDIVIDUAL_ANIMAL_HEALTH",
+      "message": "2 cows flagged with acute health deviations requiring urgent veterinary physical examination."
+    }
+  ],
+  "animals_requiring_attention": [
+    {
+      "animal_tag": "KA-MAN-104",
+      "breed": "HF Cross (2nd Lactation)",
+      "days_in_milk": 84,
+      "rectal_temperature_celsius": 39.9,
+      "respiration_rate_bpm": 74,
+      "appetite_observation": "Severe feed refusal (left 60% concentrate uneaten)",
+      "suspected_issue": "Elevated thermal distress / systemic infection",
+      "action_required": "Immediate veterinary physical examination; isolate under shaded misting stall; check for tick-borne hemoparasites.",
+      "veterinary_escalation": true
+    },
+    {
+      "animal_tag": "KA-MAN-112",
+      "breed": "Jersey Cross (3rd Lactation)",
+      "days_in_milk": 142,
+      "rectal_temperature_celsius": 38.8,
+      "respiration_rate_bpm": 48,
+      "appetite_observation": "Moderate appetite, sluggish movement",
+      "suspected_issue": "Sudden 35% milk drop; right rear quarter firmness noticed during morning milking (Early clinical mastitis indicator)",
+      "action_required": "California Mastitis Test (CMT); milk sample collection; prompt veterinary antibiotic and anti-inflammatory protocol.",
+      "veterinary_escalation": true
+    }
+  ],
+  "production_history_14d": [
+    {"day": -13, "date": "2026-05-01", "milk_litres": 448.0, "avg_temp_c": 31.0, "water_litres_per_cow": 79.0},
+    {"day": -12, "date": "2026-05-02", "milk_litres": 446.0, "avg_temp_c": 31.5, "water_litres_per_cow": 80.0},
+    {"day": -11, "date": "2026-05-03", "milk_litres": 444.0, "avg_temp_c": 32.0, "water_litres_per_cow": 78.0},
+    {"day": -10, "date": "2026-05-04", "milk_litres": 445.0, "avg_temp_c": 32.2, "water_litres_per_cow": 77.0},
+    {"day": -9, "date": "2026-05-05", "milk_litres": 442.0, "avg_temp_c": 33.0, "water_litres_per_cow": 76.0},
+    {"day": -8, "date": "2026-05-06", "milk_litres": 439.0, "avg_temp_c": 33.8, "water_litres_per_cow": 75.0},
+    {"day": -7, "date": "2026-05-07", "milk_litres": 435.0, "avg_temp_c": 34.2, "water_litres_per_cow": 73.0},
+    {"day": -6, "date": "2026-05-08", "milk_litres": 430.0, "avg_temp_c": 34.8, "water_litres_per_cow": 71.0},
+    {"day": -5, "date": "2026-05-09", "milk_litres": 426.0, "avg_temp_c": 35.1, "water_litres_per_cow": 69.0},
+    {"day": -4, "date": "2026-05-10", "milk_litres": 422.0, "avg_temp_c": 35.4, "water_litres_per_cow": 67.0},
+    {"day": -3, "date": "2026-05-11", "milk_litres": 418.0, "avg_temp_c": 35.6, "water_litres_per_cow": 66.0},
+    {"day": -2, "date": "2026-05-12", "milk_litres": 415.0, "avg_temp_c": 35.8, "water_litres_per_cow": 65.0},
+    {"day": -1, "date": "2026-05-13", "milk_litres": 412.0, "avg_temp_c": 35.5, "water_litres_per_cow": 64.0},
+    {"day": 0, "date": "2026-05-14", "milk_litres": 410.0, "avg_temp_c": 35.5, "water_litres_per_cow": 64.0}
+  ]
+}
