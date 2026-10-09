@@ -57,10 +57,12 @@ class RiskEnvironmentAgent:
         # Urgent veterinary referrals (Do NOT diagnose or prescribe!)
         veterinary_referrals = []
         for anim in flagged_animals:
+            hr_val = anim.get('heart_rate_bpm')
+            hr_str = f", Heart Rate: {hr_val} BPM" if hr_val else ""
             veterinary_referrals.append({
                 "animal_tag": anim.get("animal_tag"),
                 "breed": anim.get("breed"),
-                "vital_signs": f"Rectal Temp: {anim.get('rectal_temperature_celsius')}°C, Respiration: {anim.get('respiration_rate_bpm')} bpm",
+                "vital_signs": f"Rectal Temp: {anim.get('rectal_temperature_celsius')}°C, Respiration: {anim.get('respiration_rate_bpm')} bpm{hr_str} (Merck Ref HR: 48-84 BPM)",
                 "observations": anim.get("appetite_observation"),
                 "risk_flag": anim.get("suspected_issue"),
                 "action_guidance": "VETERINARY REVIEW MANDATORY. Immediate physical examination by a licensed veterinary practitioner is required prior to applying herd-wide management changes.",

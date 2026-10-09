@@ -45,9 +45,9 @@ def seed_database(force: bool = False):
                 cursor.execute("""
                 INSERT INTO animals (
                     animal_tag, farm_id, breed, days_in_milk, rectal_temperature_celsius,
-                    respiration_rate_bpm, appetite_observation, suspected_issue,
+                    respiration_rate_bpm, heart_rate_bpm, appetite_observation, suspected_issue,
                     veterinary_escalation, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     animal["animal_tag"],
                     demo_farm["farm_id"],
@@ -55,6 +55,7 @@ def seed_database(force: bool = False):
                     animal["days_in_milk"],
                     animal["rectal_temperature_celsius"],
                     animal["respiration_rate_bpm"],
+                    animal.get("heart_rate_bpm"),
                     animal["appetite_observation"],
                     animal["suspected_issue"],
                     1 if animal.get("veterinary_escalation") else 0,

@@ -639,7 +639,7 @@ export const Farm3DView: React.FC<Farm3DProps> = ({ onNavigate, compact = false 
               <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-100/90 px-2.5 py-1 rounded-full">
                 Interactive Farm Schematic (2.5D Mode)
               </span>
-              <h3 className="text-lg font-bold text-stone-800 mt-1">Sri Lakshmi Dairy Farm — Mandya, Karnataka</h3>
+              <h3 className="text-lg font-bold text-stone-800 mt-1">NammaHerd Dairy — Mandya, Karnataka</h3>
             </div>
             <span className="text-xs text-stone-500 bg-white/80 px-2.5 py-1 rounded-lg border border-stone-200">
               WebGL Hardware Accelerated Fallback Active

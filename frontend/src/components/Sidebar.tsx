@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="uppercase tracking-wider">Active Herd</span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <div className="text-sm font-bold text-white truncate">Sri Lakshmi Dairy Farm</div>
+          <div className="text-sm font-bold text-white truncate">NammaHerd Dairy</div>
           <div className="text-xs text-emerald-200/70 truncate">Mandya, Karnataka • 24 Cows</div>
         </div>
 

@@ -66,16 +66,44 @@ export interface AlertItem {
   message: string;
 }
 
+export interface VitalAssessmentItem {
+  name: string;
+  observed_value: number;
+  unit: string;
+  reference_min: number;
+  reference_max: number;
+  status: string;
+  deviation: number;
+  clinical_note: string;
+}
+
+export interface VeterinaryAssessment {
+  animal_tag: string;
+  breed: string;
+  days_in_milk: number;
+  urgency_level: string;
+  veterinary_escalation: boolean;
+  summary_verdict: string;
+  vital_signs_table: VitalAssessmentItem[];
+  clinical_synergy: string;
+  why_vet_recommended: string;
+  key_observations: string[];
+  immediate_actions: string[];
+  reference_citation: string;
+}
+
 export interface AttentionAnimal {
   animal_tag: string;
   breed: string;
   days_in_milk: number;
   rectal_temperature_celsius: number;
   respiration_rate_bpm: number;
+  heart_rate_bpm?: number;
   appetite_observation: string;
   suspected_issue: string;
   action_required: string;
   veterinary_escalation: boolean;
+  veterinary_assessment?: VeterinaryAssessment;
 }
 
 export interface ProductionHistoryPoint {

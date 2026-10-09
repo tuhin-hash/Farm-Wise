@@ -36,6 +36,8 @@ class FarmDataAgent:
                 "tag": anim.get("animal_tag"),
                 "breed": anim.get("breed"),
                 "rectal_temp_c": anim.get("rectal_temperature_celsius"),
+                "respiration_rate_bpm": anim.get("respiration_rate_bpm"),
+                "heart_rate_bpm": anim.get("heart_rate_bpm"),
                 "symptoms": anim.get("appetite_observation"),
                 "suspected_issue": anim.get("suspected_issue"),
                 "veterinary_escalation_required": bool(anim.get("veterinary_escalation"))
@@ -49,7 +51,7 @@ class FarmDataAgent:
         ]
 
         evidence = {
-            "source": "Synthetic SQLite farm records (Sri Lakshmi Dairy Farm, Mandya)",
+            "source": "Synthetic SQLite farm records (NammaHerd Dairy, Mandya)",
             "animal_count": farm.get("animal_count", 24),
             "current_milk_litres": curr_milk,
             "baseline_milk_litres": base_milk,

@@ -59,7 +59,7 @@ Retrieves farm overview, production trends, environmental conditions, and livest
 ```json
 {
   "farm_id": "demo-farm-01",
-  "farm_name": "Sri Lakshmi Dairy Farm",
+  "farm_name": "NammaHerd Dairy",
   "location": "Mandya District, Karnataka, India",
   "data_mode": "synthetic_demo",
   "provenance_note": "Synthetic benchmark dataset representing a typical semi-intensive dairy herd in Southern Karnataka experiencing summer thermal stress and feed cost inflation.",

@@ -68,6 +68,7 @@ def init_db():
             days_in_milk INTEGER,
             rectal_temperature_celsius REAL,
             respiration_rate_bpm INTEGER,
+            heart_rate_bpm INTEGER,
             appetite_observation TEXT,
             suspected_issue TEXT,
             veterinary_escalation INTEGER DEFAULT 0,
@@ -75,6 +76,11 @@ def init_db():
             FOREIGN KEY (farm_id) REFERENCES farms (farm_id)
         );
         """)
+        # Ensure heart_rate_bpm column exists if table pre-dated it
+        cursor.execute("PRAGMA table_info(animals);")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "heart_rate_bpm" not in columns:
+            cursor.execute("ALTER TABLE animals ADD COLUMN heart_rate_bpm INTEGER;")
 
         # Daily Observations table
         cursor.execute("""

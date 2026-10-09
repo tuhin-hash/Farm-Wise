@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { DashboardData } from '../types';
+import type { DashboardData, AttentionAnimal } from '../types';
 import {
   TrendingDown,
   Thermometer,
@@ -10,8 +10,11 @@ import {
   Award,
   Calendar,
   RefreshCw,
-  Info
+  Info,
+  Stethoscope,
+  Heart
 } from 'lucide-react';
+import { VeterinaryAlertModal } from './VeterinaryAlertModal';
 
 interface HerdTrendsProps {
   dashboard: DashboardData | null;
@@ -21,6 +24,7 @@ interface HerdTrendsProps {
 
 export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh, isLoading }) => {
   const [activeMetric, setActiveMetric] = useState<'milk' | 'thi' | 'water'>('milk');
+  const [selectedVetAnimal, setSelectedVetAnimal] = useState<AttentionAnimal | null>(null);
 
   if (!dashboard) {
     return (
@@ -153,35 +157,77 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
         </div>
 
         {/* Custom Bar Visualization */}
-        <div className="h-64 w-full relative">
-          <div className="absolute inset-0 flex items-end justify-between gap-2 pt-6 pb-8">
+        <div className="h-68 w-full relative pt-6 pb-2">
+          {/* Baseline guide line for Milk metric */}
+          {activeMetric === 'milk' && (
+            <div
+              className="absolute left-6 right-0 border-t border-dashed border-emerald-400/80 z-0 flex items-center justify-end pr-2 pointer-events-none"
+              style={{
+                bottom: `${Math.min(Math.max(((445 - minMilk) / (maxMilk - minMilk || 1)) * 170 + 26, 20), 220)}px`
+              }}
+            >
+              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50/90 px-1.5 py-0.5 rounded border border-emerald-200/60 shadow-2xs">
+                445 L Baseline
+              </span>
+            </div>
+          )}
+
+          <div className="absolute inset-0 flex items-end justify-between gap-2 pt-6 pb-8 pl-4">
             {history.map((pt, idx) => {
               let val = pt.milk_litres;
-              let heightPct = ((val - minMilk) / (maxMilk - minMilk || 1)) * 80 + 10;
+              let heightPct = ((val - minMilk) / (maxMilk - minMilk || 1)) * 75 + 15;
               let barColor = 'bg-emerald-600';
-              let displayVal = `${val}L`;
+              let displayVal = `${val} L`;
+              const isDay11 = pt.day === 11;
+              const prevPt = idx > 0 ? history[idx - 1] : null;
 
               if (activeMetric === 'thi') {
                 val = pt.avg_temp_c;
-                heightPct = ((val - minTemp) / (maxTemp - minTemp || 1)) * 80 + 10;
+                heightPct = ((val - minTemp) / (maxTemp - minTemp || 1)) * 75 + 15;
                 barColor = 'bg-amber-500';
                 displayVal = `${val}°C`;
               } else if (activeMetric === 'water') {
                 val = pt.water_litres_per_cow;
-                heightPct = ((val - minWater) / (maxWater - minWater || 1)) * 80 + 10;
+                heightPct = ((val - minWater) / (maxWater - minWater || 1)) * 75 + 15;
                 barColor = 'bg-cyan-500';
-                displayVal = `${val}L`;
+                displayVal = `${val} L/cow`;
               }
 
               const isLatest = idx === history.length - 1;
 
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative">
-                  <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition bg-stone-900 text-white text-[10px] px-2 py-1 rounded shadow-md pointer-events-none whitespace-nowrap z-20">
-                    <span className="font-semibold">{pt.date}</span>: {displayVal}
+                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative z-10">
+                  {/* Rich Tooltip */}
+                  <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition duration-150 bg-stone-900 text-white text-[10px] p-2 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-30">
+                    <div className="font-bold text-amber-300">
+                      Day {pt.day} ({pt.date}): {displayVal}
+                    </div>
+                    {activeMetric === 'milk' && prevPt && (
+                      <div className={`font-semibold ${pt.milk_litres < prevPt.milk_litres ? 'text-rose-300' : 'text-emerald-300'}`}>
+                        {pt.milk_litres < prevPt.milk_litres
+                          ? `Change: ${Math.round((pt.milk_litres - prevPt.milk_litres) * 10) / 10} L`
+                          : pt.milk_litres > prevPt.milk_litres
+                          ? `Change: +${Math.round((pt.milk_litres - prevPt.milk_litres) * 10) / 10} L`
+                          : 'Change: 0 L'}{' '}
+                        vs D{prevPt.day} ({prevPt.milk_litres} L)
+                      </div>
+                    )}
+                    <div className="text-stone-300 text-[9px]">
+                      Temp: {pt.avg_temp_c}°C • Water: {pt.water_litres_per_cow} L/cow
+                    </div>
                   </div>
 
-                  {isLatest && (
+                  {/* Day 11 Visible Drop Pin */}
+                  {activeMetric === 'milk' && isDay11 && (
+                    <div className="absolute -top-7 flex flex-col items-center animate-bounce z-20">
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                        ▼ -35 L Drop
+                      </span>
+                      <div className="w-1.5 h-1.5 bg-rose-600 rotate-45 -mt-0.5" />
+                    </div>
+                  )}
+
+                  {isLatest && !isDay11 && (
                     <span className="text-[10px] font-bold text-stone-900 mb-1">
                       {val}
                     </span>
@@ -189,10 +235,16 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
 
                   <div
                     style={{ height: `${heightPct}%` }}
-                    className={`w-full max-w-[28px] rounded-t-lg ${barColor} transition-all duration-300 opacity-90 group-hover:opacity-100`}
+                    className={`w-full max-w-[28px] rounded-t-lg transition-all duration-300 opacity-90 group-hover:opacity-100 ${
+                      activeMetric === 'milk' && isDay11
+                        ? 'bg-rose-500 ring-2 ring-rose-400 shadow-sm'
+                        : barColor
+                    }`}
                   />
 
-                  <span className="absolute bottom-0 text-[10px] text-stone-400 truncate w-full text-center">
+                  <span className={`absolute bottom-0 text-[10px] truncate w-full text-center ${
+                    activeMetric === 'milk' && isDay11 ? 'font-bold text-rose-600' : 'text-stone-400'
+                  }`}>
                     D{pt.day}
                   </span>
                 </div>
@@ -206,7 +258,7 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
           <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
           <div>
             <strong className="text-stone-900">Causal Pattern Identified:</strong> Production maintained a steady 445 L baseline until Day 10.
-            Between Day 11 and Day 14, ambient daytime temperatures rose to 34.5°C with 68% relative humidity (THI 86.8). Water intake jumped from 68 L to 82 L/cow, and milk output dropped by 35 L/day (-7.8%).
+            On Day 11, ambient daytime temperatures surged to 35.5°C with 68% relative humidity (THI 86.8). Daily milk yield dropped by exactly <strong>35.0 Litres (-7.87%)</strong> to 410.0 L/day, while water consumption jumped from 68 L to 82 L/cow.
           </div>
         </div>
       </div>
@@ -249,15 +301,15 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
           </div>
         </div>
 
-        {/* Clinical Vitals Table */}
+        {/* Clinical Vitals Table with Merck Standards */}
         <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-amber-700" />
               <span>Animals Requiring Individual Attention ({dashboard.animals_requiring_attention?.length || 0})</span>
             </h3>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
-              Veterinary Escalation Triaged
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold self-start sm:self-auto">
+              Merck Clinical Standards
             </span>
           </div>
 
@@ -267,40 +319,68 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
                 <tr className="border-b border-stone-200 text-stone-400 text-[10px] uppercase tracking-wider">
                   <th className="pb-3">Tag</th>
                   <th className="pb-3">Breed</th>
+                  <th className="pb-3">Heart Rate (48-84)</th>
                   <th className="pb-3">Rectal Temp</th>
-                  <th className="pb-3">Respiration Rate</th>
+                  <th className="pb-3">Respiration</th>
                   <th className="pb-3">Observation</th>
-                  <th className="pb-3">Action / Triage</th>
+                  <th className="pb-3 text-right">Clinical Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {(dashboard.animals_requiring_attention || []).map((animal) => (
-                  <tr key={animal.animal_tag} className="hover:bg-stone-50/60 transition">
-                    <td className="py-3 font-mono font-bold text-stone-900">{animal.animal_tag}</td>
-                    <td className="py-3 text-stone-600">{animal.breed}</td>
-                    <td className="py-3">
-                      <span className={`px-2 py-0.5 rounded-md font-mono font-bold ${
-                        animal.rectal_temperature_celsius >= 39.5 ? 'bg-rose-100 text-rose-800' : 'bg-stone-100 text-stone-800'
-                      }`}>
-                        {animal.rectal_temperature_celsius}°C
-                      </span>
-                    </td>
-                    <td className="py-3 font-mono font-medium">{animal.respiration_rate_bpm} bpm</td>
-                    <td className="py-3 text-stone-600">
-                      <div>{animal.suspected_issue}</div>
-                      <div className="text-[10px] text-stone-400">{animal.appetite_observation}</div>
-                    </td>
-                    <td className="py-3">
-                      {animal.veterinary_escalation ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold">
-                          <AlertTriangle className="w-2.5 h-2.5" /> Vet Call Req.
+                {(dashboard.animals_requiring_attention || []).map((animal) => {
+                  const hr = animal.heart_rate_bpm ?? 72;
+                  return (
+                    <tr key={animal.animal_tag} className="hover:bg-stone-50/60 transition">
+                      <td className="py-3 font-mono font-bold text-stone-900">{animal.animal_tag}</td>
+                      <td className="py-3 text-stone-600">{animal.breed}</td>
+                      <td className="py-3 font-mono">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                            hr > 84
+                              ? 'bg-rose-100 text-rose-800'
+                              : hr < 48
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          <Heart className="w-3 h-3" />
+                          <span>{hr} BPM</span>
                         </span>
-                      ) : (
-                        <span className="text-stone-500">{animal.action_required}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded-md font-mono font-bold ${
+                          animal.rectal_temperature_celsius > 39.3 ? 'bg-rose-100 text-rose-800' : 'bg-stone-100 text-stone-800'
+                        }`}>
+                          {animal.rectal_temperature_celsius}°C
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono font-medium">{animal.respiration_rate_bpm} bpm</td>
+                      <td className="py-3 text-stone-600">
+                        <div>{animal.suspected_issue}</div>
+                        <div className="text-[10px] text-stone-400">{animal.appetite_observation}</div>
+                      </td>
+                      <td className="py-3 text-right">
+                        {animal.veterinary_escalation ? (
+                          <button
+                            onClick={() => setSelectedVetAnimal(animal)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                          >
+                            <Stethoscope className="w-3 h-3 text-rose-600" />
+                            <span>Why Vet?</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedVetAnimal(animal)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 text-[11px] font-semibold transition cursor-pointer"
+                          >
+                            <Info className="w-3 h-3 text-stone-500" />
+                            <span>Vitals</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -308,11 +388,17 @@ export const HerdTrendsView: React.FC<HerdTrendsProps> = ({ dashboard, onRefresh
           <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-2xl text-rose-800 text-xs flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>
-              <strong>Clinical Guardrail:</strong> Individual clinical signs (fever, polypnea) are triaged directly to a registered veterinarian. FarmWise does not prescribe antibiotics or therapeutic medications.
+              <strong>Clinical Guardrail:</strong> Individual clinical signs (fever, polypnea, tachycardia) are triaged directly to a registered veterinarian. FarmWise does not prescribe antibiotics or therapeutic medications.
             </span>
           </div>
         </div>
       </div>
+
+      {/* Veterinary Alert Modal */}
+      <VeterinaryAlertModal
+        animal={selectedVetAnimal}
+        onClose={() => setSelectedVetAnimal(null)}
+      />
     </div>
   );
 };

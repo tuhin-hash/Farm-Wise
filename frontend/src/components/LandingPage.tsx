@@ -78,29 +78,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Real-time Status & Farm Proof Strip */}
-          <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-            <div className="bg-emerald-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-emerald-800/40">
+          <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto gap-4 text-left">
+            <div className="bg-emerald-950/50 backdrop-blur-sm p-4 rounded-2xl border border-emerald-800/40">
               <div className="text-[10px] text-emerald-300/70 font-semibold uppercase tracking-wider">Demo Herd</div>
               <div className="text-base font-bold text-white mt-0.5">24 Dairy Cows</div>
               <div className="text-[11px] text-emerald-300/70">Mandya, Karnataka</div>
             </div>
 
-            <div className="bg-emerald-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-emerald-800/40">
+            <div className="bg-emerald-950/50 backdrop-blur-sm p-4 rounded-2xl border border-emerald-800/40">
               <div className="text-[10px] text-emerald-300/70 font-semibold uppercase tracking-wider">Environmental Stress</div>
               <div className="text-base font-bold text-amber-300 mt-0.5">THI 86.8 Thermal Load</div>
               <div className="text-[11px] text-amber-300/80">Moderate-to-Severe Heat</div>
-            </div>
-
-            <div className="bg-emerald-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-emerald-800/40">
-              <div className="text-[10px] text-emerald-300/70 font-semibold uppercase tracking-wider">Multi-Agent Engine</div>
-              <div className="text-base font-bold text-emerald-300 mt-0.5">6 Verified Agents</div>
-              <div className="text-[11px] text-emerald-300/70">LangGraph Stateful Graph</div>
-            </div>
-
-            <div className="bg-emerald-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-emerald-800/40">
-              <div className="text-[10px] text-emerald-300/70 font-semibold uppercase tracking-wider">Computation Type</div>
-              <div className="text-base font-bold text-white mt-0.5">Deterministic Math</div>
-              <div className="text-[11px] text-emerald-300/70">Zero Hallucinated Numbers</div>
             </div>
           </div>
         </div>
@@ -114,7 +102,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Interactive Digital Twin</span>
             </div>
             <h2 className="text-2xl font-black text-stone-900 tracking-tight">
-              Explore Sri Lakshmi Dairy Farm in 3D
+              Explore NammaHerd Dairy in 3D
             </h2>
             <p className="text-sm text-stone-600">
               Rotate, zoom, and inspect real-time barn telemetry, silo feed inventories, and heat-stressed cows.

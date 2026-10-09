@@ -41,6 +41,17 @@ class DataService:
             return [json.loads(row["raw_json"]) for row in rows]
 
     @staticmethod
+    def get_all_attention_animals(farm_id: str = "demo-farm-01") -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT raw_json FROM animals WHERE farm_id = ?", (farm_id,))
+            rows = cursor.fetchall()
+            if rows:
+                return [json.loads(row["raw_json"]) for row in rows]
+            farm = DataService.get_farm(farm_id)
+            return farm.get("animals_requiring_attention", []) if farm else []
+
+    @staticmethod
     def get_production_history(farm_id: str = "demo-farm-01", days: int = 14) -> List[Dict[str, Any]]:
         with get_db_connection() as conn:
             cursor = conn.cursor()

@@ -5,7 +5,8 @@ import {
   RefreshCw,
   Sparkles,
   AlertTriangle,
-  ShieldAlert
+  ShieldAlert,
+  Mic
 } from 'lucide-react';
 import type { DashboardData, HealthResponse } from '../types';
 
@@ -17,6 +18,7 @@ interface HeaderProps {
   health: HealthResponse | null;
   onRefreshData: () => void;
   isLoading: boolean;
+  onOpenVoiceChat?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,7 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
   dashboard,
   health: _health,
   onRefreshData,
-  isLoading
+  isLoading,
+  onOpenVoiceChat
 }) => {
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
 
@@ -78,6 +81,19 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Quick Actions & Alerts */}
       <div className="flex items-center gap-2.5">
+        {/* Voice AI Assistant Button */}
+        {onOpenVoiceChat && (
+          <button
+            onClick={onOpenVoiceChat}
+            className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs hover:shadow-xs"
+            title="Open Multilingual Farmer Voice Assistant"
+          >
+            <Mic className="w-3.5 h-3.5 text-emerald-700 animate-pulse" />
+            <span className="hidden sm:inline">Voice AI (ಕನ್ನಡ / EN)</span>
+            <span className="sm:hidden">Voice</span>
+          </button>
+        )}
+
         {/* Refresh Button */}
         <button
           onClick={onRefreshData}
@@ -114,10 +130,10 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="p-2.5 bg-rose-50/70 rounded-xl border border-rose-100 text-xs">
                   <div className="font-bold text-rose-800 flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Cow #004 High Fever (40.2°C)</span>
+                    <span>Cow KA-MAN-104 High Fever (39.9°C)</span>
                   </div>
                   <p className="text-[11px] text-rose-700/90 mt-1">
-                    Rectal temperature exceeds 39.5°C with severe polypnea. Veterinary triage recommended.
+                    Rectal temperature 39.9°C with resting tachycardia (105 BPM) and tachypnea. Immediate veterinary triage recommended.
                   </p>
                 </div>
 

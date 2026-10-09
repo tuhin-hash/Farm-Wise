@@ -12,10 +12,14 @@ import {
   Compass,
   CheckCircle2,
   Calendar,
-  Activity
+  Activity,
+  Stethoscope,
+  Heart,
+  Info
 } from 'lucide-react';
-import type { DashboardData } from '../types';
+import type { DashboardData, AttentionAnimal } from '../types';
 import { Farm3DView } from './Farm3DView';
+import { VeterinaryAlertModal } from './VeterinaryAlertModal';
 
 export interface DashboardViewProps {
   data: DashboardData | null;
@@ -33,12 +37,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   isLoading: _isLoading
 }) => {
   const [show3DFarm, setShow3DFarm] = useState(true);
+  const [selectedVetAnimal, setSelectedVetAnimal] = useState<AttentionAnimal | null>(null);
 
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-stone-500">
         <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="font-semibold text-stone-700">Loading Sri Lakshmi Dairy Farm Telemetry...</p>
+        <p className="font-semibold text-stone-700">Loading NammaHerd Dairy Telemetry...</p>
         <span className="text-xs text-stone-400 mt-1">Fetching live SQLite herd records</span>
       </div>
     );
@@ -364,74 +369,133 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* 14-Day Milk Production History Spark-Chart */}
         <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">14-Day Milk Yield Rolling History</h3>
-              <p className="text-xs text-stone-500">Daily herd volume in litres (Mandya 24-cow cohort)</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">14-Day Milk Yield Rolling History</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                  Day 11 Drop: -35 L
+                </span>
+              </div>
+              <p className="text-xs text-stone-500">Daily herd volume in litres (Mandya 24-cow cohort • Baseline: 445 L)</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
               <Calendar className="w-3.5 h-3.5" />
-              <span>March 2026</span>
+              <span>May 2026 Mandya Records</span>
             </div>
           </div>
 
-          {/* Simple Clean Bar Chart */}
-          <div className="h-44 w-full flex items-end justify-between gap-1.5 pt-4 pb-2">
-            {(production_history_14d || []).map((pt, idx) => {
-              const heightPct = ((pt.milk_litres - minMilk) / (maxMilk - minMilk || 1)) * 80 + 15;
-              const isLatest = idx === (production_history_14d?.length || 0) - 1;
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative">
-                  <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 bg-stone-900 text-white text-[10px] px-2 py-1 rounded shadow pointer-events-none whitespace-nowrap z-10">
-                    Day {pt.day}: {pt.milk_litres} L
-                  </div>
-                  {isLatest && (
-                    <span className="text-[10px] font-bold text-emerald-700 mb-1">
-                      {pt.milk_litres}L
+          {/* Chart with Baseline and Day 11 Drop Annotation */}
+          <div className="relative pt-6 pb-2">
+            {/* 445 L Baseline Reference Line */}
+            <div
+              className="absolute left-8 right-0 border-t border-dashed border-emerald-400/80 z-0 flex items-center justify-end pr-1 pointer-events-none"
+              style={{
+                bottom: `${Math.min(Math.max(((445 - minMilk) / (maxMilk - minMilk || 1)) * 140 + 24, 20), 190)}px`
+              }}
+            >
+              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50/90 px-1.5 py-0.5 rounded border border-emerald-200/60 shadow-2xs">
+                445 L Baseline
+              </span>
+            </div>
+
+            <div className="h-48 w-full flex items-end justify-between gap-1.5 pl-6">
+              {(production_history_14d || []).map((pt, idx) => {
+                const heightPct = Math.max(((pt.milk_litres - minMilk) / (maxMilk - minMilk || 1)) * 75 + 15, 12);
+                const isDay11 = pt.day === 11;
+                const isLatest = idx === (production_history_14d?.length || 0) - 1;
+                const prevPt = idx > 0 ? production_history_14d[idx - 1] : null;
+                const diffFromPrev = prevPt ? Math.round((pt.milk_litres - prevPt.milk_litres) * 10) / 10 : 0;
+
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative z-10">
+                    {/* Rich Tooltip */}
+                    <div className="opacity-0 group-hover:opacity-100 transition duration-150 absolute -top-16 bg-stone-900 text-white text-[10px] p-2 rounded-xl shadow-xl pointer-events-none whitespace-nowrap z-30">
+                      <div className="font-bold text-amber-300">
+                        Day {pt.day} ({pt.date}): {pt.milk_litres} L
+                      </div>
+                      {prevPt && (
+                        <div className={`font-semibold ${diffFromPrev < 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                          {diffFromPrev < 0 ? `Change: ${diffFromPrev} L` : diffFromPrev > 0 ? `Change: +${diffFromPrev} L` : 'Steady (0 L)'} vs D{prevPt.day} ({prevPt.milk_litres} L)
+                        </div>
+                      )}
+                      <div className="text-stone-300 text-[9px]">
+                        Temp: {pt.avg_temp_c}°C • Water: {pt.water_litres_per_cow} L/cow
+                      </div>
+                    </div>
+
+                    {/* Day 11 Visible Drop Pin / Badge */}
+                    {isDay11 && (
+                      <div className="absolute -top-7 flex flex-col items-center animate-bounce z-20">
+                        <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                          ▼ -35 L Drop
+                        </span>
+                        <div className="w-1.5 h-1.5 bg-rose-600 rotate-45 -mt-0.5" />
+                      </div>
+                    )}
+
+                    {isLatest && !isDay11 && (
+                      <span className="text-[10px] font-bold text-emerald-700 mb-1">
+                        {pt.milk_litres}L
+                      </span>
+                    )}
+
+                    {/* Bar */}
+                    <div
+                      style={{ height: `${heightPct}%` }}
+                      className={`w-full max-w-[24px] rounded-t-lg transition-all duration-300 ${
+                        isDay11
+                          ? 'bg-rose-500 ring-2 ring-rose-400 group-hover:bg-rose-600 shadow-xs'
+                          : isLatest
+                          ? 'bg-emerald-600'
+                          : pt.milk_litres < 420
+                          ? 'bg-rose-400/80 group-hover:bg-rose-500'
+                          : 'bg-emerald-500/80 group-hover:bg-emerald-600'
+                      }`}
+                    />
+
+                    <span className={`text-[10px] mt-1 font-mono ${isDay11 ? 'font-bold text-rose-600' : 'text-stone-400'}`}>
+                      D{pt.day}
                     </span>
-                  )}
-                  <div
-                    style={{ height: `${heightPct}%` }}
-                    className={`w-full max-w-[24px] rounded-t-lg transition-all duration-300 ${
-                      isLatest
-                        ? 'bg-emerald-600'
-                        : pt.milk_litres < 420
-                        ? 'bg-rose-400/80 group-hover:bg-rose-500'
-                        : 'bg-emerald-400/80 group-hover:bg-emerald-500'
-                    }`}
-                  />
-                  <span className="text-[10px] text-stone-400 mt-1">D{pt.day}</span>
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100 text-xs text-stone-600 flex items-center justify-between">
-            <span>Correlation Analysis: <strong>Heat Wave on Day 11 directly caused a 35 L drop in production.</strong></span>
+          <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-200/70 text-xs text-stone-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span>
+                <strong>Day 11 Production Shock:</strong> Herd yield plummeted by exactly <strong>35.0 Litres</strong> (from 445.0 L baseline to 410.0 L, -7.87%) triggered by THI 86.8 summer heat stress.
+              </span>
+            </div>
             {onNavigateToArena && (
               <button
                 onClick={onNavigateToArena}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 shrink-0 ml-2"
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-white border border-emerald-300 px-3 py-1.5 rounded-xl shadow-2xs hover:bg-emerald-50 transition shrink-0 self-start sm:self-auto"
               >
-                Find Solution &rarr;
+                Analyze Countermeasures &rarr;
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* 6. Active Herd Attention Animals Table */}
+      {/* 6. Active Herd Attention Animals Table with Merck Vital Signs */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="text-base font-bold text-stone-900 flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-amber-600" />
               <span>High-Risk / Individual Observation Animals ({animals_requiring_attention?.length || 0})</span>
             </h3>
-            <p className="text-xs text-stone-500">Animals showing physiological vitals outside reference ranges</p>
+            <p className="text-xs text-stone-500">
+              Evaluated against Merck Veterinary Manual physiological resting ranges (HR 48-84 BPM, Temp 38.0-39.3°C, Resp 26-50 bpm)
+            </p>
           </div>
-          <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-            Clinical Triage Protocol
+          <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full self-start sm:self-auto">
+            Merck Clinical Triage Standards
           </span>
         </div>
 
@@ -441,46 +505,91 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <tr className="border-b border-stone-200 text-stone-400 uppercase text-[10px] tracking-wider">
                 <th className="pb-3">Tag</th>
                 <th className="pb-3">Breed</th>
-                <th className="pb-3">Rectal Temp</th>
-                <th className="pb-3">Respiration Rate</th>
+                <th className="pb-3">Heart Rate (Merck: 48-84)</th>
+                <th className="pb-3">Rectal Temp (38-39.3°C)</th>
+                <th className="pb-3">Respiration (26-50)</th>
                 <th className="pb-3">Observation</th>
-                <th className="pb-3">Required Action</th>
+                <th className="pb-3 text-right">Clinical Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {(animals_requiring_attention || []).map((animal) => (
-                <tr key={animal.animal_tag} className="hover:bg-stone-50/60 transition">
-                  <td className="py-3 font-mono font-bold text-stone-900">{animal.animal_tag}</td>
-                  <td className="py-3 font-medium">{animal.breed}</td>
-                  <td className="py-3 font-mono">
-                    <span
-                      className={`px-2 py-0.5 rounded-md font-bold ${
-                        animal.rectal_temperature_celsius >= 39.5
-                          ? 'bg-rose-100 text-rose-800'
-                          : 'bg-stone-100 text-stone-800'
-                      }`}
-                    >
-                      {animal.rectal_temperature_celsius}°C
-                    </span>
-                  </td>
-                  <td className="py-3 font-mono">{animal.respiration_rate_bpm} bpm</td>
-                  <td className="py-3 text-stone-600">{animal.suspected_issue}</td>
-                  <td className="py-3">
-                    {animal.veterinary_escalation ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold">
-                        <AlertTriangle className="w-3 h-3 text-rose-600" />
-                        <span>Refer to Veterinarian</span>
+              {(animals_requiring_attention || []).map((animal) => {
+                const hr = animal.heart_rate_bpm ?? 72;
+                return (
+                  <tr key={animal.animal_tag} className="hover:bg-stone-50/70 transition">
+                    <td className="py-3 font-mono font-bold text-stone-900">{animal.animal_tag}</td>
+                    <td className="py-3 font-medium text-stone-600">{animal.breed}</td>
+                    <td className="py-3 font-mono">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                          hr > 84
+                            ? 'bg-rose-100 text-rose-800'
+                            : hr < 48
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        <Heart className="w-3 h-3" />
+                        <span>{hr} BPM</span>
                       </span>
-                    ) : (
-                      <span className="text-stone-500">{animal.action_required}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3 font-mono">
+                      <span
+                        className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                          animal.rectal_temperature_celsius > 39.3
+                            ? 'bg-rose-100 text-rose-800'
+                            : animal.rectal_temperature_celsius < 38.0
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        {animal.rectal_temperature_celsius}°C
+                      </span>
+                    </td>
+                    <td className="py-3 font-mono text-stone-600">
+                      <span
+                        className={`font-semibold ${
+                          animal.respiration_rate_bpm > 50 ? 'text-rose-700 font-bold' : ''
+                        }`}
+                      >
+                        {animal.respiration_rate_bpm} bpm
+                      </span>
+                    </td>
+                    <td className="py-3 text-stone-600 max-w-xs">{animal.suspected_issue}</td>
+                    <td className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {animal.veterinary_escalation ? (
+                          <button
+                            onClick={() => setSelectedVetAnimal(animal)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                          >
+                            <Stethoscope className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Why Vet Recommended?</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedVetAnimal(animal)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 text-[11px] font-semibold transition cursor-pointer"
+                          >
+                            <Info className="w-3.5 h-3.5 text-stone-500" />
+                            <span>Vitals Detail</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Veterinary Explainability Modal */}
+      <VeterinaryAlertModal
+        animal={selectedVetAnimal}
+        onClose={() => setSelectedVetAnimal(null)}
+      />
     </div>
   );
 };

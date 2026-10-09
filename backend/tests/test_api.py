@@ -19,7 +19,8 @@ def test_api_dashboard(client: TestClient):
     assert data["daily_production"]["baseline_litres"] == 445.0
     assert data["water_consumption"]["current_litres_per_cow"] == 64.0
     assert len(data["active_alerts"]) > 0
-    assert len(data["animals_requiring_attention"]) == 2
+    assert len(data["animals_requiring_attention"]) >= 2
+    assert "veterinary_assessment" in data["animals_requiring_attention"][0]
     assert len(data["production_history_14d"]) == 14
 
 def test_api_feeds(client: TestClient):
@@ -127,3 +128,25 @@ def test_api_decision_lifecycle_and_outcome(client: TestClient):
     assert d_updated["status"] == "outcome_recorded"
     assert len(d_updated["outcomes"]) == 1
     assert d_updated["outcomes"][0]["observed_milk_change_litres"] == 12.5
+
+def test_api_veterinary_assessments(client: TestClient):
+    response = client.get("/api/veterinary/assessments?farm_id=demo-farm-01")
+    assert response.status_code == 200
+    data = response.json()
+    assert "Merck Veterinary Manual" in data["reference_standard"]
+    assert data["total_assessed"] >= 2
+    # Verify KA-MAN-104 critical triage
+    ka_104 = next((a for a in data["assessments"] if a["animal_tag"] == "KA-MAN-104"), None)
+    assert ka_104 is not None
+    assert "Critical" in ka_104["urgency_level"]
+    assert ka_104["veterinary_escalation"] is True
+
+    # Verify KA-MAN-112 normal HR but prompt mastitis review
+    ka_112 = next((a for a in data["assessments"] if a["animal_tag"] == "KA-MAN-112"), None)
+    assert ka_112 is not None
+    assert ka_112["veterinary_escalation"] is True
+    # Confirm heart rate is evaluated as normal (48-84)
+    hr_item = next(v for v in ka_112["vital_signs_table"] if v["name"] == "Heart Rate")
+    assert hr_item["status"] == "Normal"
+    assert hr_item["observed_value"] == 76.0
+

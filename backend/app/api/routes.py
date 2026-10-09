@@ -33,6 +33,8 @@ from app.models.responses import (
     RecordOutcomeResponse
 )
 
+from app.services.veterinary_service import evaluate_animal_vitals, assess_all_attention_animals, MERCK_VITAL_RANGES
+
 router = APIRouter(prefix="/api")
 
 @router.get("/health", response_model=HealthResponse)
@@ -57,6 +59,15 @@ def get_dashboard(farm_id: str = "demo-farm-01"):
         raise HTTPException(status_code=404, detail=f"Farm '{farm_id}' not found.")
 
     prod_hist = data_service.get_production_history(farm_id, days=14)
+    env_thi = farm.get("environmental_conditions", {}).get("thi_index", 86.8)
+
+    # Enrich attention animals with Merck-grounded veterinary clinical assessments
+    enriched_animals = []
+    for anim in farm.get("animals_requiring_attention", []):
+        anim_dict = dict(anim)
+        assessment = evaluate_animal_vitals(anim_dict, environmental_thi=env_thi)
+        anim_dict["veterinary_assessment"] = assessment.model_dump()
+        enriched_animals.append(anim_dict)
 
     return DashboardResponse(
         farm_id=farm["farm_id"],
@@ -72,9 +83,36 @@ def get_dashboard(farm_id: str = "demo-farm-01"):
         current_feed_ration=farm["current_feed_ration"],
         environmental_conditions=farm["environmental_conditions"],
         active_alerts=farm["active_alerts"],
-        animals_requiring_attention=farm["animals_requiring_attention"],
-        production_history_14d=farm["production_history_14d"]
+        animals_requiring_attention=enriched_animals,
+        production_history_14d=farm.get("production_history_14d", prod_hist)
     )
+
+@router.get("/veterinary/assessments")
+def get_veterinary_assessments(farm_id: str = "demo-farm-01"):
+    """Returns clinical veterinary assessments grounded in Merck Veterinary Manual reference standards."""
+    farm = data_service.get_farm(farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail=f"Farm '{farm_id}' not found.")
+    thi = farm.get("environmental_conditions", {}).get("thi_index", 86.8)
+    assessments = assess_all_attention_animals(farm.get("animals_requiring_attention", []), thi=thi)
+    return {
+        "reference_standard": "Merck Veterinary Manual (Adult Bovine Vital Signs Standards)",
+        "resting_vital_ranges": MERCK_VITAL_RANGES,
+        "total_assessed": len(assessments),
+        "assessments": [a.model_dump() for a in assessments]
+    }
+
+@router.get("/veterinary/assessment/{animal_tag}")
+def get_animal_veterinary_assessment(animal_tag: str, farm_id: str = "demo-farm-01"):
+    """Returns clinical veterinary assessment and 'Why Vet Recommended' breakdown for a specific animal."""
+    farm = data_service.get_farm(farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail=f"Farm '{farm_id}' not found.")
+    thi = farm.get("environmental_conditions", {}).get("thi_index", 86.8)
+    for anim in farm.get("animals_requiring_attention", []):
+        if anim.get("animal_tag", "").upper() == animal_tag.upper():
+            return evaluate_animal_vitals(anim, environmental_thi=thi).model_dump()
+    raise HTTPException(status_code=404, detail=f"Animal '{animal_tag}' not found in attention list.")
 
 @router.get("/feeds", response_model=FeedsResponse)
 def get_feeds():

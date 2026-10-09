@@ -68,10 +68,13 @@ class AttentionAnimal(BaseModel):
     days_in_milk: int
     rectal_temperature_celsius: float
     respiration_rate_bpm: int
+    heart_rate_bpm: Optional[int] = None
     appetite_observation: str
     suspected_issue: str
     action_required: str
     veterinary_escalation: bool
+    veterinary_assessment: Optional[Dict[str, Any]] = None
+
 
 class ProductionHistoryPoint(BaseModel):
     day: int

@@ -8,6 +8,7 @@ import { SimulatorView } from './components/SimulatorView';
 import { HerdTrendsView } from './components/HerdTrendsView';
 import { DecisionHistoryView } from './components/DecisionHistoryView';
 import { ResponsibleAIFooter } from './components/ResponsibleAIFooter';
+import { VoiceChatModal } from './components/VoiceChatModal';
 import { api } from './services/api';
 import type { DashboardData, HealthResponse } from './types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -19,6 +20,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isVoiceChatOpen, setIsVoiceChatOpen] = useState<boolean>(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -74,6 +76,7 @@ export function App() {
           health={health}
           onRefreshData={loadData}
           isLoading={isLoading}
+          onOpenVoiceChat={() => setIsVoiceChatOpen(true)}
         />
 
         {/* Content Container */}
@@ -147,6 +150,14 @@ export function App() {
           <ResponsibleAIFooter />
         </main>
       </div>
+
+      {/* Multilingual Farmer Voice AI Assistant Modal */}
+      <VoiceChatModal
+        isOpen={isVoiceChatOpen}
+        onClose={() => setIsVoiceChatOpen(false)}
+        onNavigateTab={setActiveTab}
+        dashboardData={dashboard}
+      />
     </div>
   );
 }
