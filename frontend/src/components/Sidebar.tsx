@@ -9,7 +9,9 @@ import {
   Home,
   CheckCircle2,
   ShieldCheck,
-  X
+  X,
+  Mic,
+  Bell
 } from 'lucide-react';
 import type { HealthResponse } from '../types';
 
@@ -19,6 +21,8 @@ interface SidebarProps {
   health: HealthResponse | null;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  onOpenVoiceChat?: () => void;
+  onOpenNotifications?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,7 +30,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
   health,
   isOpenMobile,
-  onCloseMobile
+  onCloseMobile,
+  onOpenVoiceChat,
+  onOpenNotifications
 }) => {
   const navItems = [
     { id: 'landing', label: 'Welcome & 3D Tour', icon: Home, badge: 'Home' },
@@ -144,6 +150,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
         </nav>
+
+        {/* Quick Tools: Bilingual Voice AI & SMS Alerts */}
+        <div className="px-4 py-3 space-y-2 border-t border-emerald-900/50">
+          <div className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider px-2">
+            Intelligence Tools
+          </div>
+
+          {onOpenVoiceChat && (
+            <button
+              onClick={() => {
+                onOpenVoiceChat();
+                onCloseMobile();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Mic className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform animate-pulse" />
+                <span>Voice AI (ಕನ್ನಡ / EN)</span>
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            </button>
+          )}
+
+          {onOpenNotifications && (
+            <button
+              onClick={() => {
+                onOpenNotifications();
+                onCloseMobile();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-stone-900/40 hover:bg-stone-900/70 text-stone-300 hover:text-white border border-emerald-900/40 text-xs font-medium transition"
+            >
+              <div className="flex items-center gap-2.5">
+                <Bell className="w-3.5 h-3.5 text-stone-400" />
+                <span>Alerts &amp; SMS</span>
+              </div>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-rose-500 text-white">
+                Active
+              </span>
+            </button>
+          )}
+        </div>
 
         {/* System Health & Provenance Footer Card */}
         <div className="p-4 m-4 rounded-2xl bg-[#041d13] border border-emerald-900/60 text-xs space-y-2">

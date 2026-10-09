@@ -9,6 +9,7 @@ import { HerdTrendsView } from './components/HerdTrendsView';
 import { DecisionHistoryView } from './components/DecisionHistoryView';
 import { ResponsibleAIFooter } from './components/ResponsibleAIFooter';
 import { VoiceChatModal } from './components/VoiceChatModal';
+import { NotificationCenter } from './components/NotificationCenter';
 import { api } from './services/api';
 import type { DashboardData, HealthResponse } from './types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -21,6 +22,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isVoiceChatOpen, setIsVoiceChatOpen] = useState<boolean>(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState<boolean>(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -63,6 +65,8 @@ export function App() {
         health={health}
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenVoiceChat={() => setIsVoiceChatOpen(true)}
+        onOpenNotifications={() => setIsNotificationCenterOpen(true)}
       />
 
       {/* Main Content Area (Offset by Sidebar on desktop) */}
@@ -77,6 +81,8 @@ export function App() {
           onRefreshData={loadData}
           isLoading={isLoading}
           onOpenVoiceChat={() => setIsVoiceChatOpen(true)}
+          onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+          unreadNotificationCount={dashboard?.active_alerts?.length || 3}
         />
 
         {/* Content Container */}
@@ -157,6 +163,17 @@ export function App() {
         onClose={() => setIsVoiceChatOpen(false)}
         onNavigateTab={setActiveTab}
         dashboardData={dashboard}
+      />
+
+      {/* Real In-App Notification Center Drawer & SMS Alerts Modal */}
+      <NotificationCenter
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        onNavigateTab={setActiveTab}
+        onOpenVoiceAssistant={() => {
+          setIsNotificationCenterOpen(false);
+          setIsVoiceChatOpen(true);
+        }}
       />
     </div>
   );

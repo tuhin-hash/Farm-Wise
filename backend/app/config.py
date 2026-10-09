@@ -24,11 +24,20 @@ class Settings(BaseSettings):
     DEMO_FARM_FILE: str = str(BASE_DIR / "app" / "data" / "demo_farm.json")
     FEEDS_FILE: str = str(BASE_DIR / "app" / "data" / "feeds.json")
 
-    # LLM Settings (Optional - fallback active if key is empty)
+    # LLM & Voice Settings (Optional - fallback active if key is empty)
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_AUDIO_MODEL: str = "whisper-large-v3"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_TIMEOUT_SECONDS: float = 12.0
+
+    # Notification & SMS Gateway Settings (India / Demo / Provider-agnostic)
+    SMS_PROVIDER: str = "demo"  # "demo", "msg91", "twilio"
+    SMS_API_KEY: str = ""
+    SMS_SENDER_ID: str = "FARMWI"
+    SMS_TEMPLATE_ID: str = ""
+    SMS_DEFAULT_COUNTRY_CODE: str = "+91"
+    SMS_COOLDOWN_HOURS: int = 6
 
     # CORS
     CORS_ORIGINS: list[str] = [

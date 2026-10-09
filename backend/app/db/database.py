@@ -136,3 +136,57 @@ def init_db():
             FOREIGN KEY (decision_id) REFERENCES decision_history (decision_id)
         );
         """)
+
+        # Notifications table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id TEXT PRIMARY KEY,
+            farm_id TEXT NOT NULL,
+            category TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            title_en TEXT NOT NULL,
+            title_kn TEXT NOT NULL,
+            message_en TEXT NOT NULL,
+            message_kn TEXT NOT NULL,
+            related_entity TEXT,
+            action_tab TEXT,
+            is_read INTEGER DEFAULT 0,
+            sms_sent INTEGER DEFAULT 0,
+            sms_recipient TEXT,
+            sms_status TEXT DEFAULT 'NOT_SENT',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (farm_id) REFERENCES farms (farm_id)
+        );
+        """)
+
+        # SMS Logs table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sms_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            notification_id TEXT,
+            phone_number TEXT NOT NULL,
+            message_text TEXT NOT NULL,
+            language TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            status TEXT NOT NULL,
+            provider_response_json TEXT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
+        # Farmer Notification Settings table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS farmer_notification_settings (
+            farm_id TEXT PRIMARY KEY,
+            phone_number TEXT,
+            country_code TEXT DEFAULT '+91',
+            sms_enabled INTEGER DEFAULT 0,
+            preferred_language TEXT DEFAULT 'en-IN',
+            notify_milk_drop INTEGER DEFAULT 1,
+            notify_heat_stress INTEGER DEFAULT 1,
+            notify_vet_triage INTEGER DEFAULT 1,
+            notify_decision_review INTEGER DEFAULT 1,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (farm_id) REFERENCES farms (farm_id)
+        );
+        """)

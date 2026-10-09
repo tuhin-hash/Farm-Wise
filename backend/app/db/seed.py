@@ -104,6 +104,108 @@ def seed_database(force: bool = False):
                     json.dumps(feed)
                 ))
 
+        # Seed Notifications
+        cursor.execute("SELECT COUNT(*) FROM notifications WHERE farm_id = ?", (demo_farm["farm_id"],))
+        notifs_count = cursor.fetchone()[0]
+        if notifs_count == 0 or force:
+            cursor.execute("DELETE FROM notifications WHERE farm_id = ?", (demo_farm["farm_id"],))
+            initial_notifications = [
+                (
+                    "notif-vet-104",
+                    demo_farm["farm_id"],
+                    "vet_triage",
+                    "CRITICAL",
+                    "Urgent Vet Triage: Cow KA-MAN-104",
+                    "ತುರ್ತು ಪಶುವೈದ್ಯರ ಪರಿಶೀಲನೆ: ಹಸು KA-MAN-104",
+                    "Rectal temperature 39.9°C, heart rate 105 BPM, and respiration 74 bpm indicate severe systemic heat distress. Immediate veterinary physical examination recommended.",
+                    "ಗುದನಾಳದ ತಾಪಮಾನ 39.9°C, ನಾಡಿಮಿಡಿತ 105 BPM ಮತ್ತು ಉಸಿರಾಟ 74 bpm ತೀವ್ರ ಶಾಖದ ಒತ್ತಡವನ್ನು ಸೂಚಿಸುತ್ತದೆ. ತಕ್ಷಣ ಪಶುವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+                    "KA-MAN-104",
+                    "overview",
+                    0,
+                    0,
+                    None,
+                    "NOT_SENT"
+                ),
+                (
+                    "notif-milk-01",
+                    demo_farm["farm_id"],
+                    "milk_drop",
+                    "HIGH",
+                    "Daily Milk Yield Dropped by 35 Litres",
+                    "ದೈನಂದಿನ ಹಾಲು ಉತ್ಪಾದನೆ 35 ಲೀಟರ್ ಇಳಿಕೆ",
+                    "Herd milk production declined from 445 L baseline to 410 L/day (-7.87%) on Day 11 following summer heatwave onset.",
+                    "ಬೇಸಿಗೆಯ ಬಿಸಿಲಿನ ತಾಪಮಾನದಿಂದಾಗಿ ದಿನ 11 ರಂದು ಹಾಲಿನ ಉತ್ಪಾದನೆ 445 ಲೀಟರ್‌ನಿಂದ 410 ಲೀಟರ್‌ಗೆ (35 ಲೀಟರ್) ಇಳಿಕೆಯಾಗಿದೆ.",
+                    "Herd",
+                    "trends",
+                    0,
+                    0,
+                    None,
+                    "NOT_SENT"
+                ),
+                (
+                    "notif-heat-01",
+                    demo_farm["farm_id"],
+                    "heat_stress",
+                    "WARNING",
+                    "Moderate-to-Severe Heat Stress (THI 86.8)",
+                    "ಮಧ್ಯಮ-ತೀವ್ರ ಶಾಖದ ಒತ್ತಡ (THI 86.8)",
+                    "Ambient barn conditions reached 35.5°C and 68% RH. Water intake contracted by 18% vs heat requirement. Trough shading required.",
+                    "ಕೊಟ್ಟಿಗೆಯ ತಾಪಮಾನ 35.5°C ಮತ್ತು ತೇವಾಂಶ 68% ತಲುಪಿದೆ. ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಮತ್ತು ಫ್ಯಾನ್ ಗಾಳಿ ಒದಗಿಸಿ.",
+                    "Shed",
+                    "overview",
+                    0,
+                    0,
+                    None,
+                    "NOT_SENT"
+                ),
+                (
+                    "notif-feed-01",
+                    demo_farm["farm_id"],
+                    "decision_review",
+                    "INFO",
+                    "Commercial Concentrate Price Increased to ₹34/kg",
+                    "ಮಾರುಕಟ್ಟೆ ಹಿಂಡಿ ಆಹಾರ ಬೆಲೆ ₹34/ಕೆಜಿಗೆ ಏರಿಕೆ",
+                    "Dairy margin compressed. Open the Decision Arena to evaluate de-oiled rice bran (DORB) cost-saving substitution.",
+                    "ಆಹಾರ ವೆಚ್ಚ ಹೆಚ್ಚಾಗಿದೆ. ವೆಚ್ಚ ಕಡಿತಗೊಳಿಸಲು ಮತ್ತು ಪರ್ಯಾಯ ಸೂತ್ರಗಳನ್ನು ಹೋಲಿಸಲು ನಿರ್ಧಾರ ಅಖಾಡವನ್ನು ತೆರೆಯಿರಿ.",
+                    "Feed",
+                    "arena",
+                    1,
+                    0,
+                    None,
+                    "NOT_SENT"
+                )
+            ]
+            for n in initial_notifications:
+                cursor.execute("""
+                INSERT INTO notifications (
+                    id, farm_id, category, severity, title_en, title_kn,
+                    message_en, message_kn, related_entity, action_tab,
+                    is_read, sms_sent, sms_recipient, sms_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, n)
+
+        # Seed Default Farmer Notification Settings
+        cursor.execute("SELECT COUNT(*) FROM farmer_notification_settings WHERE farm_id = ?", (demo_farm["farm_id"],))
+        settings_count = cursor.fetchone()[0]
+        if settings_count == 0 or force:
+            cursor.execute("DELETE FROM farmer_notification_settings WHERE farm_id = ?", (demo_farm["farm_id"],))
+            cursor.execute("""
+            INSERT INTO farmer_notification_settings (
+                farm_id, phone_number, country_code, sms_enabled, preferred_language,
+                notify_milk_drop, notify_heat_stress, notify_vet_triage, notify_decision_review
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                demo_farm["farm_id"],
+                "9876543210",
+                "+91",
+                1,
+                "en-IN",
+                1,
+                1,
+                1,
+                1
+            ))
+
 if __name__ == "__main__":
     seed_database(force=True)
     print("Database initialized and seeded successfully.")

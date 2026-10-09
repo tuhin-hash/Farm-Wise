@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Path, Body
+from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Path, Body, File, UploadFile, Form
 
 from app.config import settings
 from app.services.data_service import data_service
 from app.services.llm_service import llm_service
 from app.services.decision_service import decision_service
+from app.services.voice_service import voice_service
+from app.services.sms_service import sms_service
 from app.graph.workflow import execute_agent_workflow
 from app.tools.calculators import (
     calculate_feed_blend,
@@ -340,3 +343,121 @@ def record_outcome(
         message="Actual outcome recorded successfully for future retrospective evaluation. No autonomous retraining triggered.",
         outcome_id=outcome_id
     )
+
+# --- Voice AI & Groq Audio Transcription Endpoints ---
+
+@router.post("/voice/transcribe")
+async def transcribe_audio_endpoint(
+    file: UploadFile = File(...),
+    language: Optional[str] = Form(None)
+):
+    """Transcribes farmer spoken audio using Groq Whisper API (whisper-large-v3)."""
+    try:
+        content = await file.read()
+        result = await voice_service.transcribe_audio_groq(
+            content,
+            filename=file.filename or "audio.webm",
+            language=language
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech transcription failed: {str(e)}")
+
+class VoiceQueryRequest(BaseModel):
+    query: str
+    language: Optional[str] = "en-IN"
+    farm_id: Optional[str] = "demo-farm-01"
+
+@router.post("/voice/query")
+async def process_voice_query_endpoint(payload: VoiceQueryRequest):
+    """Processes farmer voice query through relevant agents, producing bilingual guidance."""
+    try:
+        result = await voice_service.process_voice_query(
+            query=payload.query,
+            language=payload.language or "en-IN",
+            farm_id=payload.farm_id or "demo-farm-01"
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice query processing failed: {str(e)}")
+
+# --- In-App Notifications & SMS Gateway Endpoints ---
+
+@router.get("/notifications")
+def get_notifications_endpoint(farm_id: str = "demo-farm-01", unread_only: bool = False):
+    """Returns in-app notifications for the farm."""
+    return {
+        "farm_id": farm_id,
+        "notifications": sms_service.get_notifications(farm_id, unread_only)
+    }
+
+@router.post("/notifications/{notification_id}/read")
+def mark_notification_read_endpoint(notification_id: str):
+    """Marks a single notification as read."""
+    success = sms_service.mark_notification_read(notification_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+    return {"status": "success", "notification_id": notification_id, "is_read": True}
+
+@router.post("/notifications/mark-all-read")
+def mark_all_notifications_read_endpoint(farm_id: str = "demo-farm-01"):
+    """Marks all notifications for a farm as read."""
+    count = sms_service.mark_all_notifications_read(farm_id)
+    return {"status": "success", "updated_count": count}
+
+@router.get("/notifications/settings")
+def get_notification_settings_endpoint(farm_id: str = "demo-farm-01"):
+    """Gets farmer phone number and alert preferences."""
+    return sms_service.get_notification_settings(farm_id)
+
+class UpdateNotificationSettingsRequest(BaseModel):
+    phone_number: str
+    country_code: Optional[str] = "+91"
+    sms_enabled: Optional[bool] = True
+    preferred_language: Optional[str] = "en-IN"
+    notify_milk_drop: Optional[bool] = True
+    notify_heat_stress: Optional[bool] = True
+    notify_vet_triage: Optional[bool] = True
+    notify_decision_review: Optional[bool] = True
+
+@router.put("/notifications/settings")
+def update_notification_settings_endpoint(payload: UpdateNotificationSettingsRequest, farm_id: str = "demo-farm-01"):
+    """Updates farmer phone number and alert preferences."""
+    try:
+        updated = sms_service.update_notification_settings(farm_id, payload.model_dump())
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+class SendTestSMSRequest(BaseModel):
+    phone_number: str
+    message: Optional[str] = None
+    language: Optional[str] = "en"
+    notification_id: Optional[str] = None
+
+@router.post("/notifications/sms/send-test")
+async def send_test_sms_endpoint(payload: SendTestSMSRequest):
+    """Sends or simulates a test SMS to an Indian mobile number."""
+    default_msg = (
+        "FarmWise Alert: Milk production dropped by 35 L on Day 11 following heatwave (THI 86.8). Check your dashboard for cooling actions."
+        if payload.language != "kn"
+        else "FarmWise ಎಚ್ಚರಿಕೆ: ಬಿಸಿಲಿನ ತಾಪಮಾನದಿಂದಾಗಿ ಹಾಲಿನ ಉತ್ಪಾದನೆ 35 ಲೀಟರ್ ಇಳಿಕೆಯಾಗಿದೆ. ಪರಿಶೀಲಿಸಲು FarmWise ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ನೋಡಿ."
+    )
+    msg_to_send = payload.message or default_msg
+    try:
+        res = await sms_service.send_sms(
+            phone_number=payload.phone_number,
+            message_text=msg_to_send,
+            language=payload.language or "en",
+            notification_id=payload.notification_id
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SMS dispatch failed: {str(e)}")
+
+@router.get("/notifications/sms/logs")
+def get_sms_logs_endpoint(limit: int = 20):
+    """Returns SMS audit logs."""
+    return {"logs": sms_service.get_recent_sms_logs(limit)}

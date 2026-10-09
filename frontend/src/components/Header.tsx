@@ -19,6 +19,8 @@ interface HeaderProps {
   onRefreshData: () => void;
   isLoading: boolean;
   onOpenVoiceChat?: () => void;
+  onOpenNotifications?: () => void;
+  unreadNotificationCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,7 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
   health: _health,
   onRefreshData,
   isLoading,
-  onOpenVoiceChat
+  onOpenVoiceChat,
+  onOpenNotifications,
+  unreadNotificationCount = 3
 }) => {
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
 
@@ -104,15 +108,24 @@ export const Header: React.FC<HeaderProps> = ({
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
         </button>
 
-        {/* Active Alerts Bell with dropdown */}
+        {/* Active Alerts & SMS Notifications Bell */}
         <div className="relative">
           <button
-            onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
+            onClick={() => {
+              if (onOpenNotifications) {
+                onOpenNotifications();
+              } else {
+                setShowAlertsDropdown(!showAlertsDropdown);
+              }
+            }}
             className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition relative border border-transparent hover:border-stone-200"
+            title="Open Herd Notifications & SMS Alerts"
           >
             <Bell className="w-4 h-4" />
-            {alertCount > 0 && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+            {unreadNotificationCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white animate-pulse">
+                {unreadNotificationCount}
+              </span>
             )}
           </button>
 

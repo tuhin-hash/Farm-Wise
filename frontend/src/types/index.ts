@@ -283,3 +283,66 @@ export interface DecisionHistoryItem {
   candidate_strategies?: CandidateStrategy[];
   outcomes?: DecisionOutcome[];
 }
+
+export type BlobState = 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'SUCCESS' | 'ERROR' | 'STOPPED';
+
+export interface NotificationItem {
+  id: string;
+  farm_id: string;
+  title: string;
+  title_kn?: string;
+  message: string;
+  message_kn?: string;
+  severity: 'CRITICAL' | 'HIGH' | 'WARNING' | 'INFO';
+  category: string;
+  is_read: boolean;
+  created_at: string;
+  action_url?: string;
+}
+
+export interface NotificationSettings {
+  farm_id: string;
+  phone_number: string;
+  country_code: string;
+  sms_enabled: boolean;
+  preferred_language: string;
+  notify_milk_drop: boolean;
+  notify_heat_stress: boolean;
+  notify_vet_triage: boolean;
+  notify_decision_review: boolean;
+  last_updated?: string;
+}
+
+export interface SMSLogItem {
+  id: number;
+  phone_number: string;
+  message_text: string;
+  language: string;
+  status: string;
+  provider: string;
+  created_at: string;
+  error_message?: string;
+  notification_id?: string;
+}
+
+export interface VoiceQueryResponse {
+  query: string;
+  language: string;
+  response_en: string;
+  response_kn: string;
+  detected_intent: string;
+  recommended_tab?: string;
+  active_agents: string[];
+  evidence_summary: Record<string, any>;
+  safety_warning?: string;
+  is_vet_triage: boolean;
+  suggested_followups: string[];
+}
+
+export interface VoiceTranscribeResponse {
+  status: string;
+  transcript: string;
+  language?: string;
+  confidence?: number;
+  model: string;
+}

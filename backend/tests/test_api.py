@@ -150,3 +150,73 @@ def test_api_veterinary_assessments(client: TestClient):
     assert hr_item["status"] == "Normal"
     assert hr_item["observed_value"] == 76.0
 
+def test_api_voice_query_bilingual(client: TestClient):
+    # Test English query
+    en_payload = {
+        "query": "My cows are producing less milk, feed prices have increased, and the weather is very hot. What should I check first?",
+        "language": "en-IN",
+        "farm_id": "demo-farm-01"
+    }
+    res_en = client.post("/api/voice/query", json=en_payload)
+    assert res_en.status_code == 200
+    data_en = res_en.json()
+    assert "executed_agents" in data_en
+    assert "Farm Data Agent" in data_en["executed_agents"]
+    assert "Nutrition Agent" in data_en["executed_agents"]
+    assert "Risk & Environment Agent" in data_en["executed_agents"]
+    assert "audio_text" in data_en
+    assert len(data_en["text_response"]) > 20
+
+    # Test Kannada query
+    kn_payload = {
+        "query": "ನನ್ನ ಹಸುಗಳು ಕಡಿಮೆ ಹಾಲು ಕೊಡುತ್ತಿವೆ. ಮೇವಿನ ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆ. ನಾನು ಮೊದಲು ಏನು ಪರಿಶೀಲಿಸಬೇಕು?",
+        "language": "kn-IN",
+        "farm_id": "demo-farm-01"
+    }
+    res_kn = client.post("/api/voice/query", json=kn_payload)
+    assert res_kn.status_code == 200
+    data_kn = res_kn.json()
+    assert "audio_text" in data_kn
+    assert any(ord(c) >= 0x0C80 and ord(c) <= 0x0CFF for c in data_kn["text_response"])
+
+def test_api_notifications_and_sms(client: TestClient):
+    # 1. Fetch in-app notifications
+    res_notifs = client.get("/api/notifications?farm_id=demo-farm-01")
+    assert res_notifs.status_code == 200
+    notifs = res_notifs.json()["notifications"]
+    assert len(notifs) >= 3
+
+    # Verify Day 11 milk drop notification exists
+    milk_notif = next((n for n in notifs if n["category"] == "milk_drop"), None)
+    assert milk_notif is not None
+    assert "35" in milk_notif["title_en"]
+
+    # 2. Mark notification read
+    res_read = client.post(f"/api/notifications/{milk_notif['id']}/read")
+    assert res_read.status_code == 200
+    assert res_read.json()["is_read"] is True
+
+    # 3. Notification settings
+    res_settings = client.get("/api/notifications/settings?farm_id=demo-farm-01")
+    assert res_settings.status_code == 200
+    assert "phone_number" in res_settings.json()
+
+    # 4. Send test SMS (Indian number validation)
+    sms_payload = {
+        "phone_number": "+919876543210",
+        "message": "FarmWise Test Alert: Heatwave detected in Mandya.",
+        "language": "en"
+    }
+    res_sms = client.post("/api/notifications/sms/send-test", json=sms_payload)
+    assert res_sms.status_code == 200
+    sms_data = res_sms.json()
+    assert sms_data["status"] in ["simulated", "sent"]
+
+    # 5. Invalid phone number rejection
+    bad_sms = {
+        "phone_number": "12345",
+        "message": "Invalid test."
+    }
+    res_bad = client.post("/api/notifications/sms/send-test", json=bad_sms)
+    assert res_bad.status_code == 400
+
