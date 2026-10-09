@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Sparkles,
   Sliders,
@@ -6,7 +6,14 @@ import {
   AlertCircle,
   Bookmark,
   Award,
-  Loader2
+  Loader2,
+  ShieldAlert,
+  ArrowRight,
+  HelpCircle,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Check
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { AnalyzeDecisionResponse } from '../types';
@@ -19,8 +26,8 @@ export interface DecisionArenaProps {
 
 export const DecisionArenaView: React.FC<DecisionArenaProps> = ({
   onDecisionSaved,
-  onNavigateHistory: _onNavigateHistory,
-  onNavigateSimulator: _onNavigateSimulator
+  onNavigateHistory,
+  onNavigateSimulator
 }) => {
   const [query, setQuery] = useState(
     "My dairy farm's milk production has declined, feed prices have increased, and the weather is hot. I have ₹5,000 available. Compare possible actions and recommend a practical strategy."
@@ -32,20 +39,38 @@ export const DecisionArenaView: React.FC<DecisionArenaProps> = ({
     profitability: 0.7,
     low_cost: 0.8,
     animal_welfare: 1.0,
-    risk_reduction: 0.9,
-    operational_feasibility: 0.6
+    risk_tolerance: 0.6,
+    operational_ease: 0.8
   });
 
-  const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeDecisionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AnalyzeDecisionResponse | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'comparison' | 'trace' | 'explanation'>('comparison');
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
+  const [farmerNotes, setFarmerNotes] = useState<string>('');
+  const [savingDecision, setSavingDecision] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showExplanationModal, setShowExplanationModal] = useState(false);
+  const [expandedStrategyId, setExpandedStrategyId] = useState<string | null>(null);
 
-  const handleAnalyze = async () => {
-    setLoading(true);
+  const applyPriorityPreset = (preset: 'balanced' | 'welfare' | 'cost' | 'profit') => {
+    if (preset === 'balanced') {
+      setPriorities({ profitability: 0.7, low_cost: 0.7, animal_welfare: 0.8, risk_tolerance: 0.6, operational_ease: 0.7 });
+    } else if (preset === 'welfare') {
+      setPriorities({ profitability: 0.5, low_cost: 0.5, animal_welfare: 1.0, risk_tolerance: 0.4, operational_ease: 0.8 });
+    } else if (preset === 'cost') {
+      setPriorities({ profitability: 0.8, low_cost: 1.0, animal_welfare: 0.6, risk_tolerance: 0.7, operational_ease: 0.9 });
+    } else if (preset === 'profit') {
+      setPriorities({ profitability: 1.0, low_cost: 0.6, animal_welfare: 0.7, risk_tolerance: 0.8, operational_ease: 0.6 });
+    }
+  };
+
+  const handleAnalyze = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setAnalyzing(true);
     setError(null);
-    setSaveSuccess(null);
+    setSavedSuccess(false);
+
     try {
       const res = await api.analyzeDecision({
         query,
@@ -53,543 +78,581 @@ export const DecisionArenaView: React.FC<DecisionArenaProps> = ({
         farmer_strategy: farmerStrategy,
         priorities
       });
-      setResult(res);
+      setAnalysisResult(res);
+      setSelectedStrategyId(res.recommended_strategy_id);
+      setExpandedStrategyId(res.recommended_strategy_id);
     } catch (err: any) {
-      setError(err.message || 'Failed to analyze decision');
+      console.error('Analysis failed:', err);
+      setError(err.message || 'Failed to complete multi-agent analysis');
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   };
 
-  const handleSaveStrategy = async (strategyId: string) => {
-    if (!result) return;
+  const handleSaveChoice = async () => {
+    if (!analysisResult || !selectedStrategyId) return;
+    setSavingDecision(true);
     try {
       await api.saveDecisionChoice({
-        decision_id: result.decision_id,
-        selected_strategy_id: strategyId,
-        farmer_notes: `Farmer adopted strategy ${strategyId} after Decision Arena evaluation.`
+        decision_id: analysisResult.decision_id,
+        selected_strategy_id: selectedStrategyId,
+        farmer_notes: farmerNotes || 'Selected strategy based on multi-agent comparative trade-off arena.'
       });
-      setSaveSuccess(`Strategy '${strategyId}' successfully saved to Decision History!`);
-      onDecisionSaved?.();
+      setSavedSuccess(true);
+      setTimeout(() => {
+        if (onDecisionSaved) onDecisionSaved();
+      }, 1200);
     } catch (err: any) {
-      setError(err.message || 'Failed to save strategy selection');
-    }
-  };
-
-  const setTemplate = (templateType: 'summer_drop' | 'feed_only' | 'welfare_priority') => {
-    if (templateType === 'summer_drop') {
-      setQuery("My dairy farm's milk production has declined, feed prices have increased, and the weather is hot. I have ₹5,000 available. Compare possible actions and recommend a practical strategy.");
-      setBudget(5000);
-      setPriorities({ profitability: 0.7, low_cost: 0.8, animal_welfare: 1.0, risk_reduction: 0.9, operational_feasibility: 0.6 });
-    } else if (templateType === 'feed_only') {
-      setQuery("Commercial concentrate feed prices are rising rapidly. What alternative grain should I buy to lower costs?");
-      setBudget(5200);
-      setPriorities({ profitability: 0.9, low_cost: 1.0, animal_welfare: 0.4, risk_reduction: 0.5, operational_feasibility: 0.7 });
-    } else {
-      setQuery("Ambient temperatures are above 35°C and cows are panting heavily. Prioritize animal comfort and water intake.");
-      setBudget(6000);
-      setPriorities({ profitability: 0.4, low_cost: 0.3, animal_welfare: 1.0, risk_reduction: 1.0, operational_feasibility: 0.6 });
+      alert(`Error saving choice: ${err.message}`);
+    } finally {
+      setSavingDecision(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Info */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-6 shadow-lg border border-slate-700">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
-            <Sparkles className="w-6 h-6" />
+    <div className="space-y-8">
+      {/* 1. Header & Differentiator Callout */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-2 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200/80">
+              <Sparkles className="w-5 h-5" />
+            </span>
+            <h1 className="text-2xl font-black text-stone-900 tracking-tight">Decision Arena</h1>
           </div>
-          <div>
-            <h1 className="text-xl font-bold">Decision Arena</h1>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Multi-agent strategy comparison engine: evaluates farmer heuristics against feed substitution, thermal mitigation, and hybrid strategies.
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm text-stone-600 mt-1">
+            Compare your traditional farming practice side-by-side with AI candidate strategies using deterministic math.
+          </p>
         </div>
 
-        {/* Quick Query Templates */}
-        <div className="mt-4 pt-4 border-t border-slate-700/80 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium">Quick Scenarios:</span>
-          <button
-            onClick={() => setTemplate('summer_drop')}
-            className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-emerald-300 border border-slate-700 transition"
-          >
-            ☀️ Summer Heat + Feed Spike + Milk Drop
-          </button>
-          <button
-            onClick={() => setTemplate('feed_only')}
-            className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-amber-300 border border-slate-700 transition"
-          >
-            🌾 Feed Price Inflation Only
-          </button>
-          <button
-            onClick={() => setTemplate('welfare_priority')}
-            className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-cyan-300 border border-slate-700 transition"
-          >
-            🐄 High Animal Welfare & Cooling
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs px-3 py-1 bg-stone-100 text-stone-700 font-bold rounded-xl border border-stone-200">
+            Mandya 24-Cow Cohort
+          </span>
+          <span className="text-xs px-3 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-xl border border-emerald-200">
+            Budget Cap: ₹{budget.toLocaleString()}
+          </span>
         </div>
       </div>
 
-      {/* Input Parameters Box */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Query & Traditional Strategy */}
-          <div className="lg:col-span-2 space-y-4">
+      {/* 2. Farmer Problem Input & Priority Controls */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Natural Language Query & Traditional Practice */}
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs space-y-5 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+              Farmer Problem Formulation
+            </h2>
+            <span className="text-xs text-stone-400">Natural Language Query</span>
+          </div>
+
+          <form onSubmit={handleAnalyze} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Farmer Question or Problem Description
+              <label className="block text-xs font-bold text-stone-800 mb-1">
+                Describe the Farm Challenge or Situation
               </label>
               <textarea
                 rows={3}
+                required
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full text-sm p-3.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 focus:bg-white text-slate-900"
-                placeholder="Describe your current livestock situation..."
+                placeholder="e.g. Milk production has declined by 35 L/day, feed prices jumped, and weather is hot..."
+                className="w-full text-xs p-3.5 rounded-2xl border border-stone-200 bg-stone-50/50 text-stone-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Available Daily Operating Budget (INR)
+                <label className="block text-xs font-bold text-stone-800 mb-1">
+                  Available Daily Operating Budget (₹)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                    ₹
+                  </div>
                   <input
                     type="number"
+                    min="1000"
+                    max="50000"
+                    step="250"
+                    required
                     value={budget}
                     onChange={(e) => setBudget(Number(e.target.value))}
-                    className="w-full text-sm pl-8 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 text-slate-900 font-bold"
+                    className="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl border border-stone-200 bg-stone-50/50 text-stone-900 font-mono font-bold focus:outline-none focus:border-emerald-600 focus:bg-white transition"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Strategies exceeding ₹{budget.toLocaleString()} will be automatically disqualified.
-                </p>
+                <p className="text-[10px] text-stone-400 mt-1">Options exceeding this budget are marked ineligible.</p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Farmer's Traditional Heuristic
+                <label className="block text-xs font-bold text-stone-800 mb-1">
+                  Farmer's Traditional / Existing Approach
                 </label>
                 <input
                   type="text"
+                  required
                   value={farmerStrategy}
                   onChange={(e) => setFarmerStrategy(e.target.value)}
-                  className="w-full text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 text-slate-900"
+                  placeholder="e.g. Cut concentrate and add more green fodder"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-stone-200 bg-stone-50/50 text-stone-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Baseline habit tested in the Arena.
-                </p>
+                <p className="text-[10px] text-stone-400 mt-1">Evaluated alongside AI proposals in the Arena.</p>
               </div>
             </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={analyzing}
+                className="w-full sm:w-auto px-7 py-3 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white rounded-2xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Orchestrating 6 Agents...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Run Multi-Agent Arena Evaluation</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Right 1 Col: Decision Priority Weights */}
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-xs space-y-4 lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Farmer Priorities</span>
+            </h2>
+            <span className="text-[10px] text-stone-400">Custom Weights</span>
           </div>
 
-          {/* Priority Sliders */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Sliders className="w-4 h-4 text-emerald-600" />
-              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Farmer Priority Weights
-              </h2>
-            </div>
+          {/* Quick Presets */}
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => applyPriorityPreset('welfare')}
+              className="py-1 px-2 text-[10px] font-bold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition"
+            >
+              Welfare First
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPriorityPreset('cost')}
+              className="py-1 px-2 text-[10px] font-bold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition"
+            >
+              Cost Cutter
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPriorityPreset('profit')}
+              className="py-1 px-2 text-[10px] font-bold rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100 transition"
+            >
+              Max Profit
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPriorityPreset('balanced')}
+              className="py-1 px-2 text-[10px] font-bold rounded-lg bg-stone-100 text-stone-800 border border-stone-200 hover:bg-stone-200 transition"
+            >
+              Balanced
+            </button>
+          </div>
 
-            {Object.entries(priorities).map(([key, val]) => (
+          {/* Sliders */}
+          <div className="space-y-3 pt-2">
+            {[
+              { key: 'animal_welfare', label: 'Animal Welfare & Health', color: 'accent-emerald-600' },
+              { key: 'profitability', label: 'Operating Margin & Milk Revenue', color: 'accent-emerald-600' },
+              { key: 'low_cost', label: 'Low Daily Expenditure', color: 'accent-amber-600' },
+              { key: 'operational_ease', label: 'Ease of Implementation', color: 'accent-stone-700' },
+              { key: 'risk_tolerance', label: 'Risk Tolerance', color: 'accent-indigo-600' }
+            ].map(({ key, label, color }) => (
               <div key={key} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="capitalize font-semibold text-slate-700">
-                    {key.replace('_', ' ')}:
-                  </span>
-                  <span className="font-mono text-emerald-700 font-bold">{(val * 100).toFixed(0)}%</span>
+                <div className="flex justify-between text-xs font-semibold text-stone-700">
+                  <span>{label}</span>
+                  <span className="font-mono text-emerald-800 font-bold">{Math.round((priorities[key] || 0.7) * 100)}%</span>
                 </div>
                 <input
                   type="range"
-                  min="0"
-                  max="1"
+                  min="0.1"
+                  max="1.0"
                   step="0.05"
-                  value={val}
-                  onChange={(e) =>
-                    setPriorities({ ...priorities, [key]: parseFloat(e.target.value) })
-                  }
-                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                  value={priorities[key] || 0.7}
+                  onChange={(e) => setPriorities({ ...priorities, [key]: Number(e.target.value) })}
+                  className={`w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer ${color}`}
                 />
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Submit Button */}
-        <div className="pt-2 flex justify-end">
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-sm shadow-md transition disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Orchestrating Agents via LangGraph...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Run Decision Arena Analysis</span>
-              </>
-            )}
-          </button>
+          <p className="text-[10px] text-stone-400 italic pt-1">
+            Priority weights dynamically calibrate the multi-attribute utility function in the Decision Agent.
+          </p>
         </div>
       </div>
 
-      {/* Error or Success notification */}
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {saveSuccess && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{saveSuccess}</span>
-        </div>
-      )}
-
-      {/* Results View */}
-      {result && (
-        <div className="space-y-6">
-          {/* Winner Showcase Banner */}
-          <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-green-950 rounded-2xl p-6 text-white border border-emerald-600 shadow-xl">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-widest">
-                  <Award className="w-4 h-4" />
-                  <span>Recommended Winning Strategy</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-extrabold text-white">
-                  {result.explanation.winner_name}
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
-                  {result.explanation.why_recommended}
-                </p>
+      {/* 3. Results Section */}
+      {analysisResult ? (
+        <div className="space-y-8">
+          {/* Real-time Agent Execution Trace Bar */}
+          <div className="bg-stone-900 text-white p-5 rounded-3xl border border-stone-800 shadow-md space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <Layers className="w-4 h-4" />
+                <span>Multi-Agent Execution Pipeline Trace</span>
               </div>
-
-              <div className="shrink-0 flex flex-col items-end gap-2">
-                <button
-                  onClick={() => handleSaveStrategy(result.recommended_strategy_id)}
-                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition flex items-center gap-2"
-                >
-                  <Bookmark className="w-4 h-4" />
-                  <span>Adopt This Strategy</span>
-                </button>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Decision ID: {result.decision_id}
-                </span>
-              </div>
+              <span className="text-[11px] text-stone-400 font-mono">
+                Decision #{analysisResult.decision_id}
+              </span>
             </div>
 
-            {/* Critical Trade-offs Bullet points */}
-            <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
-              {result.explanation.critical_tradeoffs.map((to, idx) => (
-                <div key={idx} className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">•</span>
-                  <span>{to}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1">
+              {analysisResult.execution_trace?.map((step, idx) => (
+                <div key={idx} className="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-stone-200 capitalize">{step.agent.replace('_', ' ')}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <p className="text-[10px] text-stone-400 line-clamp-2">{step.summary}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Navigation Sub-Tabs */}
-          <div className="flex border-b border-slate-200">
-            <button
-              onClick={() => setActiveTab('comparison')}
-              className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
-                activeTab === 'comparison'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Candidate Strategies ({result.candidate_strategies.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('trace')}
-              className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
-                activeTab === 'trace'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Agent Execution Trace ({result.execution_trace.length} Steps)
-            </button>
-            <button
-              onClick={() => setActiveTab('explanation')}
-              className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
-                activeTab === 'explanation'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Explanations & Safeguards
-            </button>
+          {/* Winner Banner & Why It Won Trigger */}
+          <div className="bg-gradient-to-r from-emerald-800 to-[#062c1e] text-white p-6 sm:p-7 rounded-3xl shadow-lg border border-emerald-700/60 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-1 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-1 border border-emerald-400/30">
+                <Award className="w-3.5 h-3.5" />
+                <span>Recommended Strategy Selected</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {analysisResult.explanation.winner_name}
+              </h2>
+              <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+                {analysisResult.explanation.why_recommended}
+              </p>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={farmerNotes}
+                  onChange={(e) => setFarmerNotes(e.target.value)}
+                  placeholder="Optional farmer notes for audit trail (e.g. Will buy 50kg DORB from Mandya APMC)..."
+                  className="w-full text-xs px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-600/50 text-white placeholder-emerald-300/60 focus:outline-none focus:border-emerald-300"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              <button
+                onClick={() => setShowExplanationModal(true)}
+                className="px-4 py-2.5 bg-white text-stone-900 hover:bg-stone-100 rounded-xl text-xs font-extrabold shadow-sm transition flex items-center gap-1.5"
+              >
+                <HelpCircle className="w-4 h-4 text-emerald-700" />
+                <span>Why Did This Option Win?</span>
+              </button>
+
+              <button
+                onClick={handleSaveChoice}
+                disabled={savingDecision}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-stone-950 rounded-xl text-xs font-extrabold shadow-sm transition flex items-center gap-1.5"
+              >
+                {savedSuccess ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Saved to History!</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4" />
+                    <span>{savingDecision ? 'Saving...' : 'Select Strategy'}</span>
+                  </>
+                )}
+              </button>
+
+              {onNavigateHistory && (
+                <button
+                  onClick={onNavigateHistory}
+                  className="px-3 py-2 bg-emerald-900/60 hover:bg-emerald-900 text-emerald-200 rounded-xl text-xs font-bold border border-emerald-700/60 transition"
+                >
+                  View Audit Trail
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* TAB 1: Strategy Comparison Cards */}
-          {activeTab === 'comparison' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {result.candidate_strategies.map((strat, idx) => {
-                const isWinner = strat.strategy_id === result.recommended_strategy_id;
+          {/* Candidate Strategies Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-stone-900">
+                Candidate Strategies Comparison ({analysisResult.candidate_strategies.length})
+              </h3>
+              <span className="text-xs text-stone-500">Sorted by Multi-Attribute Utility Score</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {analysisResult.candidate_strategies.map((strat, rankIdx) => {
+                const isWinner = strat.strategy_id === analysisResult.recommended_strategy_id;
+                const isSelected = selectedStrategyId === strat.strategy_id;
+                const isExpanded = expandedStrategyId === strat.strategy_id;
+
                 return (
                   <div
                     key={strat.strategy_id}
-                    className={`rounded-2xl p-6 border transition flex flex-col justify-between ${
+                    className={`rounded-3xl p-6 border transition-all duration-200 ${
                       isWinner
-                        ? 'bg-emerald-50/40 border-emerald-500 shadow-md ring-1 ring-emerald-500'
-                        : !strat.eligible
-                        ? 'bg-slate-50 border-rose-300 opacity-90'
-                        : 'bg-white border-slate-200 shadow-sm'
+                        ? 'bg-emerald-50/40 border-emerald-300 shadow-sm'
+                        : strat.eligible
+                        ? 'bg-white border-stone-200/90 shadow-xs'
+                        : 'bg-stone-50/70 border-stone-200 opacity-80'
                     }`}
                   >
-                    <div className="space-y-4">
-                      {/* Strategy Header */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-slate-800 text-white font-mono">
-                              Rank #{idx + 1}
+                    {/* Strategy Card Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xs font-bold text-stone-400">Rank #{rankIdx + 1}</span>
+                          {isWinner && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-md border border-emerald-300">
+                              RECOMMENDED
                             </span>
-                            {isWinner && (
-                              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-600 text-white">
-                                ⭐ Top Recommended
-                              </span>
-                            )}
-                            {!strat.eligible && (
-                              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-600 text-white">
-                                Disqualified
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="font-extrabold text-base text-slate-900 mt-2">
-                            {strat.name}
-                          </h3>
+                          )}
+                          {!strat.eligible && (
+                            <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-bold rounded-md">
+                              OVER BUDGET
+                            </span>
+                          )}
                         </div>
-
-                        {/* Weighted Score Badge */}
-                        <div className="text-right shrink-0">
-                          <div className="text-2xl font-black text-slate-900">
-                            {strat.scores.weighted_total.toFixed(1)}
-                          </div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                            Score / 100
-                          </div>
-                        </div>
+                        <h4 className="text-base font-bold text-stone-900">{strat.name}</h4>
                       </div>
 
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {strat.description}
-                      </p>
-
-                      {/* Ineligibility Reason */}
-                      {!strat.eligible && (
-                        <div className="p-3 bg-rose-100 text-rose-800 text-xs rounded-xl font-medium border border-rose-200">
-                          🚫 {strat.ineligibility_reason}
-                        </div>
-                      )}
-
-                      {/* Financial Metrics */}
-                      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-center">
-                        <div>
-                          <div className="text-[11px] text-slate-400 font-semibold">Daily Cost</div>
-                          <div className={`font-extrabold text-sm mt-0.5 ${strat.estimated_daily_cost_inr > budget ? 'text-rose-600' : 'text-slate-800'}`}>
-                            ₹{strat.estimated_daily_cost_inr.toLocaleString()}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[11px] text-slate-400 font-semibold">Revenue</div>
-                          <div className="font-extrabold text-sm text-slate-800 mt-0.5">
-                            ₹{strat.estimated_daily_revenue_inr?.toLocaleString() || '-'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[11px] text-slate-400 font-semibold">Net Margin</div>
-                          <div className="font-extrabold text-sm text-emerald-700 mt-0.5">
-                            ₹{strat.estimated_daily_margin_inr?.toLocaleString() || '-'}
-                          </div>
+                      <div className="text-right">
+                        <div className="text-xs text-stone-400 font-medium">Weighted Score</div>
+                        <div className="text-xl font-black font-mono text-emerald-800">
+                          {strat.scores?.weighted_total || 0}
                         </div>
                       </div>
-
-                      {/* Attributes & Scores Breakdown */}
-                      <div className="space-y-1.5 pt-1">
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                          Evaluation Scores
-                        </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-                          <div className="flex justify-between">
-                            <span>Affordability:</span>
-                            <span className="font-mono font-bold text-slate-800">{strat.scores.affordability_score.toFixed(0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Animal Welfare:</span>
-                            <span className="font-mono font-bold text-slate-800">{strat.scores.animal_welfare_score.toFixed(0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Financial Impact:</span>
-                            <span className="font-mono font-bold text-slate-800">{strat.scores.financial_impact_score.toFixed(0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Risk Rating:</span>
-                            <span className="font-mono font-bold text-slate-800">{strat.relative_risk_level.toUpperCase()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Advantages & Drawbacks */}
-                      <div className="space-y-1 pt-1 text-xs">
-                        {strat.advantages.map((adv, aIdx) => (
-                          <div key={aIdx} className="text-emerald-700 flex items-start gap-1.5">
-                            <span className="font-bold">✓</span>
-                            <span>{adv}</span>
-                          </div>
-                        ))}
-                        {strat.drawbacks.map((drw, dIdx) => (
-                          <div key={dIdx} className="text-slate-500 flex items-start gap-1.5">
-                            <span className="font-bold">✕</span>
-                            <span>{drw}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Veterinary flag */}
-                      {strat.veterinary_confirmation_required && (
-                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900 font-medium">
-                          ⚠️ Veterinary Consultation Required: {strat.veterinary_confirmation_details}
-                        </div>
-                      )}
                     </div>
 
-                    {/* Action button */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 flex justify-end">
+                    <p className="text-xs text-stone-600 leading-relaxed mb-4">{strat.description}</p>
+
+                    {/* Financial Metrics Strip */}
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-stone-50 rounded-2xl border border-stone-100 text-center mb-4">
+                      <div>
+                        <div className="text-[10px] text-stone-400 font-semibold">Daily Cost</div>
+                        <div className="text-xs font-bold text-stone-900 font-mono mt-0.5">
+                          ₹{strat.estimated_daily_cost_inr.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-stone-400 font-semibold">Feasibility</div>
+                        <div className="text-xs font-bold text-stone-800 capitalize mt-0.5">
+                          {strat.operational_feasibility}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-stone-400 font-semibold">Relative Risk</div>
+                        <div className={`text-xs font-bold capitalize mt-0.5 ${
+                          strat.relative_risk_level === 'high' ? 'text-rose-600' : 'text-emerald-700'
+                        }`}>
+                          {strat.relative_risk_level}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Details Button */}
+                    <button
+                      type="button"
+                      onClick={() => setExpandedStrategyId(isExpanded ? null : strat.strategy_id)}
+                      className="w-full py-1.5 text-xs text-stone-500 hover:text-stone-800 flex items-center justify-center gap-1 font-semibold"
+                    >
+                      <span>{isExpanded ? 'Hide Details' : 'View Scoring & Evidence'}</span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {/* Expanded Section */}
+                    {isExpanded && (
+                      <div className="pt-3 mt-3 border-t border-stone-200/80 space-y-3 text-xs">
+                        {/* 5-Attribute Scores */}
+                        <div className="space-y-1">
+                          <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                            Attribute Score Breakdown (0-100)
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                            <div className="flex justify-between">
+                              <span className="text-stone-500">Affordability:</span>
+                              <span className="font-mono font-bold text-stone-800">{strat.scores?.affordability_score}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-stone-500">Animal Welfare:</span>
+                              <span className="font-mono font-bold text-stone-800">{strat.scores?.animal_welfare_score}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-stone-500">Financial Impact:</span>
+                              <span className="font-mono font-bold text-stone-800">{strat.scores?.financial_impact_score}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-stone-500">Operational Ease:</span>
+                              <span className="font-mono font-bold text-stone-800">{strat.scores?.feasibility_score}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Evidence & Supporting Points */}
+                        {strat.evidence_supporting && strat.evidence_supporting.length > 0 && (
+                          <div>
+                            <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">
+                              Supporting Farm Evidence:
+                            </div>
+                            <ul className="space-y-1 text-stone-600 text-[11px]">
+                              {strat.evidence_supporting.map((ev, i) => (
+                                <li key={i} className="flex items-start gap-1.5">
+                                  <span className="text-emerald-600 font-bold">•</span>
+                                  <span>{ev}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Veterinary Flag */}
+                        {strat.veterinary_confirmation_required && (
+                          <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 text-[11px] flex items-center gap-2">
+                            <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                            <span>Veterinary consultation required before adjusting rations for feverish animals.</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Radio Select Footer */}
+                    <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
                       <button
-                        onClick={() => handleSaveStrategy(strat.strategy_id)}
-                        disabled={!strat.eligible}
-                        className={`text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 ${
-                          isWinner
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                            : strat.eligible
-                            ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        onClick={() => setSelectedStrategyId(strat.strategy_id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-emerald-700 text-white'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                         }`}
                       >
-                        <Bookmark className="w-3.5 h-3.5" />
-                        <span>Select Strategy</span>
+                        {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
+                        <span>{isSelected ? 'Chosen Strategy' : 'Select This Strategy'}</span>
                       </button>
+
+                      {onNavigateSimulator && (
+                        <button
+                          onClick={onNavigateSimulator}
+                          className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                        >
+                          <span>Simulate In What-If</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
-          )}
+          </div>
+        </div>
+      ) : (
+        /* Empty / Initial State */
+        <div className="bg-white rounded-3xl p-12 border border-stone-200/90 shadow-xs text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200/80">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="text-lg font-bold text-stone-900">Ready to Compare Farm Decisions</h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Submit the farmer's question above or adjust your priority weights to trigger the multi-agent decision engine.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleAnalyze()}
+            className="px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold transition shadow-xs"
+          >
+            Run Decision Arena on Current Herd
+          </button>
+        </div>
+      )}
 
-          {/* TAB 2: Agent Execution Trace */}
-          {activeTab === 'trace' && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+      {/* 4. "Why Did This Option Win?" Modal Drawer */}
+      {showExplanationModal && analysisResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-stone-200 max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  LangGraph Agent Orchestration Pipeline
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                  Decision Agent Explainability
+                </span>
+                <h3 className="text-xl font-black text-stone-900 mt-2">
+                  Why Did "{analysisResult.explanation.winner_name}" Win?
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Real multi-agent flow trace: intent classification, conditional routing, data retrieval, and deterministic financial calculations.
-                </p>
               </div>
+              <button
+                onClick={() => setShowExplanationModal(false)}
+                className="text-stone-400 hover:text-stone-700 text-sm font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div className="space-y-4 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-slate-200">
-                {result.execution_trace.map((step, idx) => (
-                  <div key={idx} className="relative flex items-start gap-4 ml-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold z-10 shrink-0">
-                      {idx + 1}
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-sm text-slate-900">{step.agent}</span>
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          {new Date(step.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {step.summary}
-                      </p>
-                    </div>
+            <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 text-xs text-emerald-950 leading-relaxed">
+              <strong>Primary Winning Rationale:</strong> {analysisResult.explanation.why_recommended}
+            </div>
+
+            {/* Why Alternatives Ranked Lower */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                Why Other Options Ranked Lower:
+              </h4>
+              <div className="space-y-2">
+                {analysisResult.explanation.why_alternatives_ranked_lower?.map((alt, i) => (
+                  <div key={i} className="p-3 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-700">
+                    {alt}
                   </div>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* TAB 3: Explanations & Assumptions */}
-          {activeTab === 'explanation' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Why Alternatives Ranked Lower */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900">
-                  Alternative Strategies Critique
-                </h3>
-                <div className="space-y-3">
-                  {result.explanation.why_alternatives_ranked_lower.map((critique, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
-                      {critique}
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-900 leading-relaxed">
-                  <span className="font-bold">Priority Sensitivity: </span>
-                  {result.explanation.sensitivity_to_priorities}
-                </div>
-              </div>
-
-              {/* Assumptions, Missing Data, and Safety */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900">
-                  Data Assumptions & Responsible AI Safeguards
-                </h3>
-
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Model Assumptions
+            {/* Critical Trade-Offs */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                Critical Trade-Offs & Sensitivities:
+              </h4>
+              <div className="space-y-1.5">
+                {analysisResult.explanation.critical_tradeoffs?.map((t, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-stone-600">
+                    <span className="text-amber-600 font-bold">•</span>
+                    <span>{t}</span>
                   </div>
-                  {result.assumptions.map((assump, idx) => (
-                    <div key={idx} className="text-xs text-slate-600 flex items-start gap-2">
-                      <span className="text-slate-400">•</span>
-                      <span>{assump}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="text-xs font-bold text-amber-700 uppercase tracking-wider">
-                    Missing Data Warnings
-                  </div>
-                  {result.missing_data.map((md, idx) => (
-                    <div key={idx} className="text-xs text-amber-900 flex items-start gap-2">
-                      <span className="text-amber-500 font-bold">!</span>
-                      <span>{md}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <div className="text-xs font-bold text-rose-700 uppercase tracking-wider">
-                    Veterinary Safety Directives
-                  </div>
-                  {result.safety_notes.map((sn, idx) => (
-                    <div key={idx} className="text-xs text-rose-900 flex items-start gap-2">
-                      <span className="text-rose-500 font-bold">🛡️</span>
-                      <span>{sn}</span>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
-          )}
+
+            <div className="pt-3 border-t border-stone-100 flex justify-end">
+              <button
+                onClick={() => setShowExplanationModal(false)}
+                className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold"
+              >
+                Close Explanation
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
