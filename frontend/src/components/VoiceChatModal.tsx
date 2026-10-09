@@ -66,8 +66,10 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   const audioChunksRef = useRef<Blob[]>([]);
   const webSpeechRecognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentTranscriptRef = useRef<string>('');
+  const isQueryProcessingRef = useRef<boolean>(false);
 
-  // Initialize Web Speech Recognition as client-side fallback/live preview
+  // Initialize Web Speech Recognition as client-side fallback & live instant preview
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -75,22 +77,30 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     if (SpeechRecognition) {
       try {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = lang;
 
         recognition.onresult = (event: any) => {
           let currentTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
+          for (let i = 0; i < event.results.length; i++) {
             currentTranscript += event.results[i][0].transcript;
           }
           if (currentTranscript) {
+            currentTranscriptRef.current = currentTranscript;
             setTranscript(currentTranscript);
           }
         };
 
         recognition.onerror = (event: any) => {
           console.warn('Web Speech recognition warning:', event.error);
+        };
+
+        recognition.onend = () => {
+          if (isRecording && currentTranscriptRef.current.trim() && !isQueryProcessingRef.current) {
+            // Silence detected / speech ended -> auto process
+            stopRecording();
+          }
         };
 
         webSpeechRecognitionRef.current = recognition;
@@ -127,15 +137,41 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Speak assistant response using SpeechSynthesis
+  // Speak assistant response using SpeechSynthesis with unpause protection & voice selection
   const speakResponse = (text: string) => {
-    if (!voiceEnabled || !('speechSynthesis' in window)) return;
+    if (!voiceEnabled || !('speechSynthesis' in window)) {
+      setBlobState('IDLE');
+      return;
+    }
 
     try {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      // Clean markdown tags for natural speech playback
+      const cleanedText = text
+        .replace(/\*\*/g, '')
+        .replace(/#/g, '')
+        .replace(/•/g, '')
+        .replace(/₹/g, ' rupees ')
+        .replace(/°C/g, ' degrees Celsius ');
+
+      const utterance = new SpeechSynthesisUtterance(cleanedText);
       utterance.lang = lang;
       utterance.rate = 0.95; // comfortable natural cadence for dairy farmers
+
+      // Select suitable voice
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const langPrefix = lang.split('-')[0].toLowerCase();
+        const voice = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix)) ||
+                      voices.find((v) => v.lang.toLowerCase().includes('en'));
+        if (voice) {
+          utterance.voice = voice;
+        }
+      }
 
       utterance.onstart = () => {
         setIsSpeaking(true);
@@ -145,14 +181,15 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         setIsSpeaking(false);
         setBlobState('IDLE');
       };
-      utterance.onerror = () => {
+      utterance.onerror = (e) => {
+        console.warn('SpeechSynthesis error:', e);
         setIsSpeaking(false);
         setBlobState('IDLE');
       };
 
       window.speechSynthesis.speak(utterance);
     } catch (e) {
-      console.warn('Speech synthesis error:', e);
+      console.warn('Speech synthesis exception:', e);
       setIsSpeaking(false);
       setBlobState('IDLE');
     }
@@ -166,10 +203,14 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     }
   };
 
-  // Start Voice Recording with MediaStream and Groq Whisper API
+  // Start Voice Recording with MediaStream, Web Speech & Groq Whisper STT
   const startRecording = async () => {
     try {
       stopSpeaking();
+      currentTranscriptRef.current = '';
+      setTranscript('');
+      isQueryProcessingRef.current = false;
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(stream);
 
@@ -188,11 +229,13 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        // Stream tracks release
         stream.getTracks().forEach((track) => track.stop());
         setAudioStream(null);
 
-        // Send to Groq Whisper transcription endpoint
+        // If a query was already processed from real-time Web Speech recognition, return
+        if (isQueryProcessingRef.current) return;
+
+        // Otherwise send to backend Groq Whisper transcribe endpoint
         if (audioBlob.size > 0) {
           setBlobState('THINKING');
           try {
@@ -200,27 +243,31 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
               audioBlob,
               lang === 'kn-IN' ? 'kn' : 'en'
             );
-            if (whisperRes && whisperRes.transcript) {
-              setTranscript(whisperRes.transcript);
-              handleProcessQuery(whisperRes.transcript);
+            const recognized = whisperRes?.transcript || (whisperRes as any)?.text || currentTranscriptRef.current;
+            if (recognized && recognized.trim()) {
+              currentTranscriptRef.current = recognized.trim();
+              setTranscript(recognized.trim());
+              handleProcessQuery(recognized.trim());
               return;
             }
           } catch (err) {
             console.warn('Groq Whisper transcribe fallback:', err);
-            // Fallback to whatever transcript Web Speech captured
-            if (transcript.trim()) {
-              handleProcessQuery(transcript);
-            } else {
-              setBlobState('IDLE');
-            }
           }
+        }
+
+        // Fallback to recognized client speech
+        const fallbackSpoken = currentTranscriptRef.current.trim();
+        if (fallbackSpoken) {
+          handleProcessQuery(fallbackSpoken);
+        } else {
+          setBlobState('IDLE');
         }
       };
 
       mediaRecorderRef.current = recorder;
       recorder.start();
 
-      // Also trigger Web Speech interim recognition for instant text display
+      // Trigger Web Speech recognition for live continuous text preview
       if (webSpeechRecognitionRef.current) {
         try {
           webSpeechRecognitionRef.current.lang = lang;
@@ -238,7 +285,37 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    setIsRecording(false);
+
+    if (webSpeechRecognitionRef.current) {
+      try {
+        webSpeechRecognitionRef.current.stop();
+      } catch (_) {}
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_) {}
+    }
+
+    // Process recognized speech immediately
+    const spoken = currentTranscriptRef.current.trim();
+    if (spoken && !isQueryProcessingRef.current) {
+      handleProcessQuery(spoken);
+    }
+  };
+
+  // Submit and process voice query through multi-agent engine
+  const handleProcessQuery = async (queryText?: string) => {
+    const textToSend = (queryText || currentTranscriptRef.current || transcript).trim();
+    if (!textToSend || isQueryProcessingRef.current) return;
+
+    isQueryProcessingRef.current = true;
+    setIsRecording(false);
+
+    // Stop active audio recording if still running
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       try {
         mediaRecorderRef.current.stop();
       } catch (_) {}
@@ -248,15 +325,8 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         webSpeechRecognitionRef.current.stop();
       } catch (_) {}
     }
-    setIsRecording(false);
-  };
 
-  // Submit and process voice query through multi-agent engine
-  const handleProcessQuery = async (queryText?: string) => {
-    const textToSend = (queryText || transcript).trim();
-    if (!textToSend) return;
-
-    // Add user message
+    // Add user message to conversation
     const userMsg: VoiceMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -265,57 +335,71 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     };
     setMessages((prev) => [...prev, userMsg]);
     setTranscript('');
+    currentTranscriptRef.current = '';
     setBlobState('THINKING');
 
     try {
       // Call backend bilingual multi-agent reasoning endpoint
-      const result = await api.processVoiceQuery({
+      const result: any = await api.processVoiceQuery({
         query: textToSend,
         language: lang,
         farm_id: 'demo-farm-01'
       });
 
-      const responseText = lang === 'kn-IN' ? result.response_kn : result.response_en;
+      // Defensively resolve response text
+      const responseText =
+        (lang === 'kn-IN' ? (result.response_kn || result.text_response) : (result.response_en || result.text_response)) ||
+        result.text_response ||
+        result.audio_text ||
+        result.response_en ||
+        result.response_kn ||
+        'FarmWise analyzed your herd telemetry and updated recommendations.';
+
+      const spokenAudio = result.audio_text || responseText;
 
       const assistantMsg: VoiceMessage = {
         id: `bot-${Date.now()}`,
         sender: 'assistant',
         text: responseText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        agents: result.active_agents,
+        agents: result.active_agents || result.executed_agents || ['Farm Data Agent', 'Nutrition Agent'],
         evidence: result.evidence_summary,
-        isVetAlert: result.is_vet_triage,
+        isVetAlert: Boolean(result.is_vet_triage || result.triage_warning),
         actionTab: result.recommended_tab
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
       setBlobState('SPEAKING');
-      speakResponse(responseText);
+      speakResponse(spokenAudio);
 
-      // If user asks to compare strategies or go to arena
+      // If query recommends Arena
       if (result.recommended_tab === 'arena' && onAnalyzeQuery) {
         onAnalyzeQuery(textToSend);
       }
     } catch (err: any) {
-      console.warn('Voice query processing error, using local fallback:', err);
-      // Local fallback logic
+      console.warn('Voice query processing fallback:', err);
+      // High-Fidelity Local Fallback
       const fallbackText =
         lang === 'kn-IN'
-          ? 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ಹಾಲು ಉತ್ಪಾದನೆ 35 ಲೀಟರ್ ಇಳಿಕೆಯಾಗಿದೆ. ತಾಪಮಾನ 36.5°C ಮತ್ತು ಆರ್ದ್ರತೆ ಹೆಚ್ಚಾಗಿದೆ. ಹೆಚ್ಚಿನ ವಿಶ್ಲೇಷಣೆಗಾಗಿ ನಿರ್ಧಾರ ಅಖಾಡವನ್ನು ಬಳಸಿ.'
-          : 'Farm status: Herd milk production dropped by 35 L on Day 11 following heatwave (THI 86.8). Cow KA-MAN-104 is flagged for urgent vet care. Check the Decision Arena to optimize feed.';
+          ? 'ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಫಾರ್ಮ್‌ನಲ್ಲಿ ದಿನ 11 ರಂದು ಬಿಸಿಲಿನ ಶಾಖದಿಂದಾಗಿ ಹಾಲು 35 ಲೀಟರ್ ಇಳಿಕೆಯಾಗಿದೆ. ಮೊದಲು ಕುಡಿಯುವ ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಕಲ್ಪಿಸಿ ಮತ್ತು ಫ್ಯಾನ್ ಗಾಳಿ ಹೆಚ್ಚಿಸಿ. ಹಸು KA-MAN-104 ಗೆ ಜ್ವರವಿದ್ದು ಪಶುವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.'
+          : 'Herd Alert: Milk production declined by 35 L on Day 11 following summer heat stress (THI 86.8). First, shade drinking troughs and increase barn ventilation. Cow KA-MAN-104 has a 39.9°C fever and requires urgent vet attention.';
 
       const fallbackMsg: VoiceMessage = {
         id: `bot-${Date.now()}`,
         sender: 'assistant',
         text: fallbackText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        agents: ['Farm Data Agent', 'Risk Assessment Agent'],
+        agents: ['Farm Data Agent', 'Risk Assessment Agent', 'Decision Agent'],
         actionTab: 'arena'
       };
 
       setMessages((prev) => [...prev, fallbackMsg]);
       setBlobState('SPEAKING');
       speakResponse(fallbackText);
+    } finally {
+      setTimeout(() => {
+        isQueryProcessingRef.current = false;
+      }, 1000);
     }
   };
 
@@ -411,7 +495,7 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
             state={blobState}
             audioStream={audioStream}
             size={180}
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={isRecording ? stopRecording : (isSpeaking ? stopSpeaking : startRecording)}
           />
 
           <p className="text-[11px] text-stone-300 font-medium mt-1">
@@ -534,7 +618,10 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
               <input
                 type="text"
                 value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
+                onChange={(e) => {
+                  setTranscript(e.target.value);
+                  currentTranscriptRef.current = e.target.value;
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleProcessQuery();

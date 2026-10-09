@@ -65,7 +65,9 @@ class VoiceService:
                         res_json = resp.json()
                         text = res_json.get("text", "").strip()
                         return {
+                            "status": "success",
                             "text": text,
+                            "transcript": text,
                             "mode": "GROQ_WHISPER_LIVE",
                             "model": settings.GROQ_AUDIO_MODEL,
                             "language_detected": language or "auto"
@@ -80,7 +82,9 @@ class VoiceService:
             sample_fallback = "ನನ್ನ ಹಸುಗಳು ಕಡಿಮೆ ಹಾಲು ಕೊಡುತ್ತಿವೆ. ಮೇವಿನ ಬೆಲೆ ಹೆಚ್ಚಾಗಿದೆ. ನಾನು ಮೊದಲು ಏನು ಪರಿಶೀಲಿಸಬೇಕು?"
 
         return {
+            "status": "success",
             "text": sample_fallback,
+            "transcript": sample_fallback,
             "mode": "DEMO_RECOGNITION_MODE",
             "model": "rule-based-speech-engine",
             "note": "Using speech recognition fallback. Configure GROQ_API_KEY in .env for live Groq Whisper v3 transcriptions."
@@ -138,13 +142,26 @@ CRITICAL SAFETY RULES:
             llm_text = await llm_service.generate_chat_completion(messages, temperature=0.3)
             if llm_text:
                 spoken_clean = llm_text.replace("*", "").replace("#", "").replace("- ", "").split("\n\n")[0]
+                is_triage = "104" in q_lower or "fever" in q_lower or "sick" in q_lower
+                rec_tab = "arena" if any(w in q_lower for w in ["feed", "price", "dorb", "cost", "strategy", "arena", "ತಂತ್ರ", "ಅಖಾಡ"]) else "overview"
                 return {
                     "query": query,
                     "language": language,
                     "executed_agents": executed_agents,
+                    "active_agents": executed_agents,
                     "text_response": llm_text,
                     "audio_text": spoken_clean[:280],
-                    "triage_warning": "Cow KA-MAN-104 exhibits pyrexia (39.9°C) and requires immediate veterinary examination." if "104" in q_lower or "fever" in q_lower else None,
+                    "response_en": llm_text if not is_kannada else "",
+                    "response_kn": llm_text if is_kannada else "",
+                    "is_vet_triage": is_triage,
+                    "triage_warning": "Cow KA-MAN-104 exhibits pyrexia (39.9°C) and requires immediate veterinary examination." if is_triage else None,
+                    "safety_warning": "Cow KA-MAN-104 exhibits pyrexia (39.9°C) and requires immediate veterinary examination." if is_triage else None,
+                    "recommended_tab": rec_tab,
+                    "evidence_summary": {
+                        "milk_decline_litres": 35.0,
+                        "thi_index": 86.8,
+                        "flagged_cow": "KA-MAN-104" if is_triage else None
+                    },
                     "suggested_followups": [
                         "How can I shade my water troughs to increase drinking?" if not is_kannada else "ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಒದಗಿಸುವುದು ಹೇಗೆ?",
                         "What is the daily cost difference if I use DORB?" if not is_kannada else "DORB ಬಳಸಿದರೆ ದಿನಕ್ಕೆ ಎಷ್ಟು ಉಳಿತಾಯವಾಗುತ್ತದೆ?",
@@ -241,13 +258,27 @@ CRITICAL SAFETY RULES:
                 )
                 audio_resp = f"Hello. Your herd is currently producing {curr_milk} litres of milk daily under heat stress conditions. You can ask about milk trends, flagged cow vitals, or feed cost savings in the Decision Arena."
 
+        is_triage = "104" in q_lower or "fever" in q_lower or "sick" in q_lower
+        rec_tab = "arena" if any(w in q_lower for w in ["feed", "price", "dorb", "cost", "strategy", "arena", "ತಂತ್ರ", "ಅಖಾಡ"]) else "overview"
+
         return {
             "query": query,
             "language": language,
             "executed_agents": executed_agents,
+            "active_agents": executed_agents,
             "text_response": text_resp,
             "audio_text": audio_resp,
-            "triage_warning": "Cow KA-MAN-104 has acute pyrexia (39.9°C). Immediate veterinary physical exam required." if "104" in q_lower or "fever" in q_lower or "sick" in q_lower else None,
+            "response_en": text_resp if not is_kannada else "",
+            "response_kn": text_resp if is_kannada else "",
+            "is_vet_triage": is_triage,
+            "triage_warning": "Cow KA-MAN-104 has acute pyrexia (39.9°C). Immediate veterinary physical exam required." if is_triage else None,
+            "safety_warning": "Cow KA-MAN-104 has acute pyrexia (39.9°C). Immediate veterinary physical exam required." if is_triage else None,
+            "recommended_tab": rec_tab,
+            "evidence_summary": {
+                "milk_decline_litres": 35.0,
+                "thi_index": 86.8,
+                "flagged_cow": "KA-MAN-104" if is_triage else None
+            },
             "suggested_followups": [
                 "How do I shade water troughs to restore intake?" if not is_kannada else "ನೀರಿನ ತೊಟ್ಟಿಗಳಿಗೆ ನೆರಳು ಕಲ್ಪಿಸುವುದು ಹೇಗೆ?",
                 "Compare feed savings with DORB in the Decision Arena" if not is_kannada else "ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ DORB ವೆಚ್ಚ ಉಳಿತಾಯ ಹೋಲಿಸಿ",

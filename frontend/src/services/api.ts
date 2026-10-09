@@ -107,7 +107,7 @@ export const api = {
     ),
 
   // --- Voice AI (Groq Whisper & Bilingual Query) ---
-  transcribeAudio: async (audioBlob: Blob, language?: string): Promise<{ status: string; transcript: string; language?: string; model: string }> => {
+  transcribeAudio: async (audioBlob: Blob, language?: string): Promise<{ status: string; transcript: string; text?: string; language?: string; model: string }> => {
     const formData = new FormData();
     formData.append('file', audioBlob, 'farmer_voice.webm');
     if (language) {

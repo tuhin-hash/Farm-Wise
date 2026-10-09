@@ -31,9 +31,12 @@ class Settings(BaseSettings):
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_TIMEOUT_SECONDS: float = 12.0
 
-    # Notification & SMS Gateway Settings (India / Demo / Provider-agnostic)
-    SMS_PROVIDER: str = "demo"  # "demo", "msg91", "twilio"
-    SMS_API_KEY: str = ""
+    # Notification & SMS Gateway Settings (India / Demo / Provider-agnostic / Twilio)
+    SMS_PROVIDER: str = "twilio"  # "demo", "msg91", "twilio"
+    SMS_API_KEY: str = "3GDVLLVF9SGYGA2H447GJNNR"
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = "3GDVLLVF9SGYGA2H447GJNNR"
+    TWILIO_FROM_NUMBER: str = "+15005550006"
     SMS_SENDER_ID: str = "FARMWI"
     SMS_TEMPLATE_ID: str = ""
     SMS_DEFAULT_COUNTRY_CODE: str = "+91"
