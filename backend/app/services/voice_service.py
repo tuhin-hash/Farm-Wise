@@ -313,13 +313,93 @@ CRITICAL SAFETY RULES:
                 )
                 audio_resp = f"Hello. Your herd is currently producing {curr_milk} litres of milk daily under heat stress conditions. You can ask about milk trends, flagged cow vitals, or feed cost savings in the Decision Arena."
 
-        is_triage = "104" in q_lower or "fever" in q_lower or "sick" in q_lower
-        if any(w in q_lower for w in ["report", "single cow", "cow report", "dossier", "health card", "ವರದಿ"]):
-            rec_tab = "cow-reports"
-        elif any(w in q_lower for w in ["feed", "price", "dorb", "cost", "strategy", "arena", "ತಂತ್ರ", "ಅಖಾಡ"]):
-            rec_tab = "arena"
-        else:
+        # Determine rich card and automated platform navigation action
+        card = None
+        action = None
+        rec_tab = "overview"
+
+        if any(w in q_lower for w in ["open 3d", "show 3d", "3d tour", "go to 3d", "virtual farm", "3ಡಿ"]):
+            action = {"type": "NAVIGATE", "tab": "landing", "label": "Switching to 3D Virtual Farm"}
+            rec_tab = "landing"
+        elif any(w in q_lower for w in ["go to overview", "show overview", "open dashboard", "show dashboard", "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್"]):
+            action = {"type": "NAVIGATE", "tab": "overview", "label": "Switching to Farm Overview"}
             rec_tab = "overview"
+        elif any(w in q_lower for w in ["open arena", "decision arena", "compare feed", "ಅಖಾಡ"]):
+            action = {"type": "NAVIGATE", "tab": "arena", "label": "Switching to Decision Arena"}
+            rec_tab = "arena"
+            card = {
+                "type": "decision_arena",
+                "title": "Decision Arena: Feed Cost Countermeasures",
+                "top_strategy": "DORB + Maize Starch Blend",
+                "cost_savings": "₹720 / day (₹30 / cow / day)",
+                "crude_protein": "18.2% CP (Nutritionally Balanced)",
+                "action_tab": "arena"
+            }
+        elif any(w in q_lower for w in ["open simulator", "what if", "simulate", "ಸಿಮ್ಯುಲೇಟರ್"]):
+            action = {"type": "NAVIGATE", "tab": "simulator", "label": "Switching to What-If Simulator"}
+            rec_tab = "simulator"
+            card = {
+                "type": "simulator_preview",
+                "title": "What-If Feed Substitution Simulator",
+                "baseline_feed": "Commercial Cattle Feed (₹34/kg)",
+                "alternative_feed": "De-oiled Rice Bran (DORB, ₹18/kg)",
+                "default_substitution": "30%",
+                "action_tab": "simulator"
+            }
+        elif any(w in q_lower for w in ["open trends", "herd trends", "production graph", "ಟ್ರೆಂಡ್ಸ್"]):
+            action = {"type": "NAVIGATE", "tab": "trends", "label": "Switching to Herd Analytics & Trends"}
+            rec_tab = "trends"
+        elif any(w in q_lower for w in ["open history", "decision history", "past decisions", "ಇತಿಹಾಸ"]):
+            action = {"type": "NAVIGATE", "tab": "history", "label": "Switching to Decision Audit History"}
+            rec_tab = "history"
+        elif any(w in q_lower for w in ["send sms", "sms alert", "message alert", "ಎಸ್ಎಂಎಸ್"]):
+            action = {"type": "OPEN_NOTIFICATIONS", "label": "Opening Notification Center for SMS Dispatch"}
+            card = {
+                "type": "sms_dispatch",
+                "title": "SMS Alert Dispatch Gateway",
+                "preview": "FarmWise Alert: Milk dropped by 35L on Day 11 due to THI 86.8. Cow KA-MAN-104 has 39.9°C pyrexia.",
+                "recipient": "+919876543210"
+            }
+        elif any(w in q_lower for w in ["report", "dossier", "cow 104", "104", "cow 112", "112", "single cow", "cow report", "ವರದಿ"]):
+            target_cow = "KA-MAN-112" if "112" in q_lower else "KA-MAN-104"
+            action = {"type": "NAVIGATE", "tab": "cow-reports", "target_cow": target_cow, "label": f"Opening Dossier for {target_cow}"}
+            rec_tab = "cow-reports"
+            card = {
+                "type": "cow_vital",
+                "title": f"Merck Clinical Dossier: {target_cow}",
+                "animal_tag": target_cow,
+                "breed": "HF Cross (62.5% Holstein)" if target_cow == "KA-MAN-104" else "Jersey Cross (50% Jersey)",
+                "rectal_temp": "39.9°C" if target_cow == "KA-MAN-104" else "38.8°C",
+                "heart_rate": "105 BPM" if target_cow == "KA-MAN-104" else "76 BPM",
+                "respiration": "74 bpm" if target_cow == "KA-MAN-104" else "48 bpm",
+                "urgency": "CRITICAL_TRIAGE" if target_cow == "KA-MAN-104" else "PROMPT_ATTENTION",
+                "action_tab": "cow-reports"
+            }
+        elif any(w in q_lower for w in ["milk", "drop", "heat", "hot", "thi", "weather", "ಹಾಲು", "ಬಿಸಿಲು"]):
+            card = {
+                "type": "heat_stress",
+                "title": "Day 11 Thermal Shock & Production Decline",
+                "thi_index": 86.8,
+                "ambient_temp": "35.5°C (RH 68%)",
+                "milk_drop": "-35.0 Litres (from 445L baseline to 410L)",
+                "cooling_actions": [
+                    "Shade water troughs immediately",
+                    "Continuous ceiling fan ventilation",
+                    "Feed concentrates during cool morning/evening hours"
+                ],
+                "action_tab": "arena"
+            }
+        elif any(w in q_lower for w in ["feed", "price", "dorb", "cost", "ಮೇವಿನ", "ಬೆಲೆ"]):
+            card = {
+                "type": "decision_arena",
+                "title": "Feed Optimization Summary",
+                "top_strategy": "DORB + Maize Starch Blend",
+                "cost_savings": "₹720 / day (₹30 / cow / day)",
+                "crude_protein": "18.2% CP (Nutritionally Balanced)",
+                "action_tab": "arena"
+            }
+
+        is_triage = "104" in q_lower or "fever" in q_lower or "sick" in q_lower
 
         return {
             "query": query,
@@ -334,6 +414,8 @@ CRITICAL SAFETY RULES:
             "triage_warning": "Cow KA-MAN-104 has acute pyrexia (39.9°C). Immediate veterinary physical exam required." if is_triage else None,
             "safety_warning": "Cow KA-MAN-104 has acute pyrexia (39.9°C). Immediate veterinary physical exam required." if is_triage else None,
             "recommended_tab": rec_tab,
+            "action": action,
+            "card": card,
             "evidence_summary": {
                 "milk_decline_litres": 35.0,
                 "thi_index": 86.8,

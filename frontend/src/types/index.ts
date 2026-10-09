@@ -330,13 +330,24 @@ export interface VoiceQueryResponse {
   language: string;
   response_en: string;
   response_kn: string;
-  detected_intent: string;
+  detected_intent?: string;
   recommended_tab?: string;
   active_agents: string[];
   evidence_summary: Record<string, any>;
   safety_warning?: string;
   is_vet_triage: boolean;
   suggested_followups: string[];
+  action?: {
+    type: 'NAVIGATE' | 'OPEN_NOTIFICATIONS';
+    tab?: string;
+    target_cow?: string;
+    label?: string;
+  };
+  card?: {
+    type: 'cow_vital' | 'decision_arena' | 'simulator_preview' | 'heat_stress' | 'sms_dispatch';
+    title: string;
+    [key: string]: any;
+  };
 }
 
 export interface VoiceTranscribeResponse {

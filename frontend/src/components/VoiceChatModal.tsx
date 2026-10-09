@@ -36,6 +36,7 @@ interface VoiceMessage {
   evidence?: Record<string, any>;
   isVetAlert?: boolean;
   actionTab?: string;
+  card?: any;
 }
 
 export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
@@ -365,12 +366,20 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
         agents: result.active_agents || result.executed_agents || ['Farm Data Agent', 'Nutrition Agent'],
         evidence: result.evidence_summary,
         isVetAlert: Boolean(result.is_vet_triage || result.triage_warning),
-        actionTab: result.recommended_tab
+        actionTab: result.recommended_tab,
+        card: result.card
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
       setBlobState('SPEAKING');
       speakResponse(spokenAudio);
+
+      // Auto-navigate if voice command explicitly commanded navigation
+      if (result.action && result.action.type === 'NAVIGATE' && result.action.tab) {
+        setTimeout(() => {
+          onNavigateTab(result.action.tab);
+        }, 1500);
+      }
 
       // If query recommends Arena
       if (result.recommended_tab === 'arena' && onAnalyzeQuery) {
@@ -427,17 +436,20 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
     lang === 'kn-IN'
       ? [
           { label: 'ನಮಸ್ಕಾರ / Hello', query: 'ನಮಸ್ಕಾರ! ಫಾರ್ಮ್‌ವೈಸ್ ಹೇಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ?' },
-          { label: 'ಏಕ ಹಸುವಿನ ವರದಿ', query: 'ಹಸು KA-MAN-104 ಸಂಪೂರ್ಣ ವರದಿ ತೋರಿಸಿ' },
-          { label: 'ಹಾಲು ಇಳಿಕೆ ಏಕೆ?', query: 'ನನ್ನ ಹಸುಗಳು ಕಡಿಮೆ ಹಾಲು ಏಕೆ ನೀಡುತ್ತಿವೆ?' },
-          { label: 'KA-MAN-104 ತಪಾಸಣೆ', query: 'ಹಸು KA-MAN-104 ಅನ್ನು ಪಶುವೈದ್ಯರಿಗೆ ತೋರಿಸಬೇಕೇ?' },
-          { label: 'ನಿರ್ಧಾರ ಅಖಾಡ ತೆರೆಯಿರಿ', query: 'ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ ತಂತ್ರಗಳನ್ನು ಹೋಲಿಸಿ' }
+          { label: '🎙️ 3D ಫಾರ್ಮ್ ಪ್ರವಾಸ', query: '3D ಫಾರ್ಮ್ ಪ್ರವಾಸವನ್ನು ತೆರೆಯಿರಿ' },
+          { label: '🎙️ ಹಸು KA-MAN-104 ವರದಿ', query: 'ಹಸು KA-MAN-104 ಸಂಪೂರ್ಣ ವರದಿ ತೋರಿಸಿ' },
+          { label: '🎙️ ಹಾಲು ಇಳಿಕೆ ಏಕೆ?', query: 'ನನ್ನ ಹಸುಗಳು ಕಡಿಮೆ ಹಾಲು ಏಕೆ ನೀಡುತ್ತಿವೆ?' },
+          { label: '🎙️ ನಿರ್ಧಾರ ಅಖಾಡ', query: 'ನಿರ್ಧಾರ ಅಖಾಡದಲ್ಲಿ ತಂತ್ರಗಳನ್ನು ಹೋಲಿಸಿ' },
+          { label: '🎙️ ಸಿಮ್ಯುಲೇಟರ್', query: 'ಸಿಮ್ಯುಲೇಟರ್ ತೆರೆಯಿರಿ' }
         ]
       : [
           { label: 'Hello FarmWise', query: 'Hello! How can FarmWise help my dairy farm today?' },
-          { label: 'Single Cow Report', query: 'Show me the clinical report dossier for cow KA-MAN-104' },
-          { label: 'Why did milk drop 35 L?', query: 'Why did my herd milk production drop by 35 litres on Day 11?' },
-          { label: 'Check Cow KA-MAN-104', query: 'Why is cow KA-MAN-104 flagged for urgent veterinary triage?' },
-          { label: 'Compare Feed Strategies', query: 'Compare feed strategies and cost trade-offs in Decision Arena' }
+          { label: '🎙️ Open 3D Farm Tour', query: 'Open 3D virtual farm tour' },
+          { label: '🎙️ Show Cow KA-MAN-104', query: 'Show me the clinical report dossier for cow KA-MAN-104' },
+          { label: '🎙️ Why did milk drop 35 L?', query: 'Why did my herd milk production drop by 35 litres on Day 11?' },
+          { label: '🎙️ Compare Feed Strategies', query: 'Compare feed strategies and cost trade-offs in Decision Arena' },
+          { label: '🎙️ Open What-If Simulator', query: 'Open what if simulator' },
+          { label: '🎙️ Send SMS Alert', query: 'Send SMS alert to my phone' }
         ];
 
   return (
@@ -580,6 +592,86 @@ export const VoiceChatModal: React.FC<VoiceChatModalProps> = ({
 
                 {/* Message Body */}
                 <p className="text-xs leading-relaxed whitespace-pre-wrap">{m.text}</p>
+
+                {/* Embedded Rich Artifact Card */}
+                {m.card && (
+                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2 mt-2 text-stone-800">
+                    <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                      <span className="text-[11px] font-bold text-stone-900 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{m.card.title}</span>
+                      </span>
+                      {m.card.action_tab && (
+                        <button
+                          onClick={() => {
+                            onNavigateTab(m.card.action_tab);
+                            onClose();
+                          }}
+                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline"
+                        >
+                          View Full &rarr;
+                        </button>
+                      )}
+                    </div>
+
+                    {m.card.type === 'cow_vital' && (
+                      <div className="grid grid-cols-2 gap-2 text-[10px]">
+                        <div className="p-1.5 bg-white rounded-lg border border-stone-100">
+                          <span className="text-stone-400 block">Rectal Temp:</span>
+                          <span className="font-bold text-stone-900">{m.card.rectal_temp}</span>
+                        </div>
+                        <div className="p-1.5 bg-white rounded-lg border border-stone-100">
+                          <span className="text-stone-400 block">Cardiac Pulse:</span>
+                          <span className="font-bold text-stone-900">{m.card.heart_rate}</span>
+                        </div>
+                        <div className="p-1.5 bg-white rounded-lg border border-stone-100">
+                          <span className="text-stone-400 block">Respiration:</span>
+                          <span className="font-bold text-stone-900">{m.card.respiration}</span>
+                        </div>
+                        <div className="p-1.5 bg-white rounded-lg border border-stone-100">
+                          <span className="text-stone-400 block">Triage Status:</span>
+                          <span className="font-bold text-rose-700">{m.card.urgency}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {m.card.type === 'decision_arena' && (
+                      <div className="space-y-1 text-[11px]">
+                        <p className="text-stone-700">Top Strategy: <strong className="text-emerald-800">{m.card.top_strategy}</strong></p>
+                        <p className="text-stone-600">Savings: <strong>{m.card.cost_savings}</strong></p>
+                        <p className="text-[10px] text-stone-500">{m.card.crude_protein}</p>
+                      </div>
+                    )}
+
+                    {m.card.type === 'heat_stress' && (
+                      <div className="space-y-1 text-[11px]">
+                        <p className="text-stone-700">THI Index: <strong className="text-amber-700">{m.card.thi_index}</strong> ({m.card.ambient_temp})</p>
+                        <p className="text-rose-700 font-bold">{m.card.milk_drop}</p>
+                        {m.card.cooling_actions && (
+                          <ul className="list-disc pl-4 text-[10px] text-stone-600 space-y-0.5">
+                            {m.card.cooling_actions.map((act: string, i: number) => (
+                              <li key={i}>{act}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
+                    {m.card.type === 'simulator_preview' && (
+                      <div className="space-y-1 text-[11px]">
+                        <p className="text-stone-700">Blend: <strong>{m.card.baseline_feed}</strong> &rarr; <strong>{m.card.alternative_feed}</strong></p>
+                        <p className="text-emerald-700 font-bold">Suggested Substitution: {m.card.default_substitution}</p>
+                      </div>
+                    )}
+
+                    {m.card.type === 'sms_dispatch' && (
+                      <div className="space-y-1 text-[11px]">
+                        <p className="text-stone-600 font-mono text-[10px] truncate">&quot;{m.card.preview}&quot;</p>
+                        <p className="text-stone-400 text-[9px]">Target: {m.card.recipient}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Action Navigation Button */}
                 {m.actionTab && (
